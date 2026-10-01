@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 dark:bg-[#060913] dark:text-gray-100 transition-colors duration-300;
+    overflow-x: hidden;
+  }
+}
+
+/* Quantum Grid & Scanlines for Dark & Light */
+.quantum-grid {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(0, 240, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 240, 255, 0.06) 1px, transparent 1px);
+}
+
+.dark .quantum-grid {
+  background-image: 
+    linear-gradient(to right, rgba(0, 240, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 240, 255, 0.05) 1px, transparent 1px);
+}
+
+/* Glassmorphic Cyber Panels for Light & Dark */
+.glass-panel {
+  @apply bg-white/80 dark:bg-[#0d1322]/80 border border-slate-200 dark:border-cyan-500/20 shadow-xl shadow-slate-200/50 dark:shadow-black/40 backdrop-blur-xl transition-all duration-200;
+}
+
+.glass-panel-glow {
+  @apply bg-white/95 dark:bg-[#0d1322]/90 border border-cyan-500/40 shadow-xl shadow-cyan-500/10 dark:shadow-cyan-500/20 backdrop-blur-2xl transition-all duration-200;
+}
+
+.glass-panel-danger {
+  @apply bg-red-50/90 dark:bg-[#1a0a12]/90 border border-red-300 dark:border-red-500/40 shadow-xl shadow-red-500/10 dark:shadow-red-500/25 backdrop-blur-2xl transition-all duration-200;
+}
+
+/* Neon Text Glows */
+.neon-text-cyan {
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.6), 0 0 20px rgba(0, 240, 255, 0.3);
+}
+
+.neon-text-red {
+  text-shadow: 0 0 8px rgba(255, 42, 95, 0.7), 0 0 20px rgba(255, 42, 95, 0.4);
+}
+
+.neon-text-amber {
+  text-shadow: 0 0 8px rgba(255, 183, 3, 0.7), 0 0 20px rgba(255, 183, 3, 0.4);
+}
+
+.neon-text-purple {
+  text-shadow: 0 0 8px rgba(157, 78, 221, 0.7), 0 0 20px rgba(157, 78, 221, 0.4);
+}
+
+/* 3D Card Flip styles */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-slate-100 dark:bg-[#060913];
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 dark:bg-[#1e2942] rounded;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #00f0ff;
+}

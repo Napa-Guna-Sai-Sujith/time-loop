@@ -1,0 +1,21 @@
+{
+  "name": "timeloop-event-platform",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "TIME LOOP - Live Elimination College Event Web Platform",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "node server/server.js",
+    "client": "npm --prefix client run dev",
+    "build": "npm --prefix client run build",
+    "start": "NODE_ENV=production node server/server.js"
+  },
+  "dependencies": {
+    "concurrently": "^9.1.2",
+    "cors": "^2.8.5",
+    "dotenv": "^18.0.5",
+    "express": "^4.21.2",
+    "pg": "^8.23.1",
+    "socket.io": "^4.8.1"
+  }
+}
