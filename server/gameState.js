@@ -603,4 +603,25 @@ export class GameEngine {
       p.levelStartTime = null;
     }
   }
+
+  purgeAll() {
+    this.status = EVENT_STATUS.LOBBY;
+    this.startTime = null;
+    this.registeredUSNs.clear();
+    this.players.clear();
+    this.eliminationOrder = [];
+    this.escapedOrder = [];
+    this.antiCheatLogs = [];
+    this.wildCard = { active: false, candidates: [], cards: [], winner: null };
+    this.finalRound = {
+      active: false,
+      startedAt: null,
+      durationMs: 10 * 60 * 1000,
+      finalists: [],
+      stagesProgress: {},
+      completedFinalists: [],
+      champion: null
+    };
+    this.resetQuestionsToDefault();
+  }
 }

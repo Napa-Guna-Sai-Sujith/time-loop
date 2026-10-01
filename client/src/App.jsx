@@ -120,16 +120,29 @@ export default function App() {
     handleNavigate("home");
   };
 
+  const handleLogoutPlayer = () => {
+    localStorage.removeItem("timeloop_player");
+    sessionStorage.removeItem("timeloop_player");
+    setPlayer(null);
+    setCurrentQuestion(null);
+  };
+
   // Reconnect player session if stored
   useEffect(() => {
     if (player?.usn) {
-      socket.emit("register_player", player, (res) => {
+      socket.emit("reconnect_player", { usn: player.usn }, (res) => {
         if (res?.success) {
           setPlayer(res.player);
           setEventStatus(res.eventStatus);
           if (res.currentQuestion) {
             setCurrentQuestion(res.currentQuestion);
           }
+        } else {
+          // Database was purged/reset or session invalid -> wipe local player storage
+          localStorage.removeItem("timeloop_player");
+          sessionStorage.removeItem("timeloop_player");
+          setPlayer(null);
+          setCurrentQuestion(null);
         }
       });
     }
@@ -189,8 +202,18 @@ export default function App() {
       setEventStatus("FINAL_ROUND");
     });
 
+    socket.on("database_purged", () => {
+      localStorage.removeItem("timeloop_player");
+      sessionStorage.removeItem("timeloop_player");
+      setPlayer(null);
+      setCurrentQuestion(null);
+      setEventStatus("LOBBY");
+    });
+
     socket.on("event_reset", () => {
-      setPlayer(prev => prev ? { ...prev, status: "WAITING", level: 1, attemptIndex: 0 } : null);
+      localStorage.removeItem("timeloop_player");
+      sessionStorage.removeItem("timeloop_player");
+      setPlayer(null);
       setCurrentQuestion(null);
       setEventStatus("LOBBY");
     });
@@ -205,6 +228,7 @@ export default function App() {
       socket.off("pardoned");
       socket.off("wild_card_started");
       socket.off("final_round_started");
+      socket.off("database_purged");
       socket.off("event_reset");
     };
   }, [player?.usn]);
@@ -341,6 +365,7 @@ export default function App() {
         onNavigate={handleNavigate}
         isDark={isDark}
         onToggleTheme={handleToggleTheme}
+        onLogoutPlayer={handleLogoutPlayer}
       />
 
       {/* Admin Passcode Modal (PIN: 107) */}

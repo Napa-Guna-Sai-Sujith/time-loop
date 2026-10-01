@@ -98,7 +98,7 @@ io.on("connection", (socket) => {
     socket.emit("projector_update", engine.getDashboardStats());
   });
 
-  // Participant Registration / Login
+  // Participant Registration (Explicit Form Submit)
   socket.on("register_player", (payload, callback) => {
     try {
       const player = engine.registerOrLoginPlayer(socket.id, payload);
@@ -109,6 +109,48 @@ io.on("connection", (socket) => {
       savePlayerToDB(player);
 
       // Send back current state
+      const currentQuestion = engine.getCurrentQuestion(player);
+      const res = {
+        success: true,
+        player,
+        eventStatus: engine.status,
+        currentQuestion,
+        finalPuzzleStage: engine.finalRound.active ? engine.finalRoundPuzzle.stages[(engine.finalRound.stagesProgress[player.usn] || 1) - 1] : null
+      };
+
+      if (callback) callback(res);
+      io.to("hosts").emit("dashboard_update", engine.getDashboardStats());
+      io.to("projectors").emit("projector_update", engine.getDashboardStats());
+    } catch (err) {
+      if (callback) callback({ success: false, error: err.message });
+    }
+  });
+
+  // Participant Reconnect (Session Validation)
+  socket.on("reconnect_player", ({ usn }, callback) => {
+    try {
+      const cleanUSN = usn ? usn.trim().toUpperCase() : "";
+      const player = engine.registeredUSNs.get(cleanUSN);
+
+      if (!player) {
+        // Player not found in memory/database (e.g. database was reset)
+        if (callback) {
+          callback({
+            success: false,
+            reason: "Session invalid or database was reset. Please register again."
+          });
+        }
+        return;
+      }
+
+      // Restore socket connection
+      player.socketId = socket.id;
+      player.connected = true;
+      player.lastActiveAt = Date.now();
+      engine.players.set(socket.id, player);
+      socket.join(`player_${player.usn}`);
+      socket.join("participants");
+
       const currentQuestion = engine.getCurrentQuestion(player);
       const res = {
         success: true,
@@ -254,7 +296,8 @@ io.on("connection", (socket) => {
 
   // Host: Reset Event
   socket.on("host_reset_event", () => {
-    engine.resetAll();
+    engine.purgeAll();
+    io.emit("database_purged");
     io.emit("event_reset");
     io.to("hosts").emit("dashboard_update", engine.getDashboardStats());
     io.to("projectors").emit("projector_update", engine.getDashboardStats());
@@ -263,7 +306,8 @@ io.on("connection", (socket) => {
   // Host: Purge Database & Reset Everything
   socket.on("host_purge_database", async (callback) => {
     const dbRes = await purgeDatabaseAndReset();
-    engine.resetAll();
+    engine.purgeAll();
+    io.emit("database_purged");
     io.emit("event_reset");
     io.to("hosts").emit("dashboard_update", engine.getDashboardStats());
     io.to("projectors").emit("projector_update", engine.getDashboardStats());

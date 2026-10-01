@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Volume2, VolumeX, Sun, Moon, Clock, Terminal, Monitor, User, Lock, KeyRound } from "lucide-react";
+import { Volume2, VolumeX, Sun, Moon, Clock, Terminal, Monitor, User, Lock, KeyRound, LogOut } from "lucide-react";
 import { sounds } from "../audio/soundEngine";
 
 export default function Navbar({ 
@@ -8,7 +8,8 @@ export default function Navbar({
   currentRoute, 
   onNavigate,
   isDark,
-  onToggleTheme 
+  onToggleTheme,
+  onLogoutPlayer
 }) {
   const [muted, setMuted] = useState(false);
   const [currentTime, setCurrentTime] = useState("");
@@ -118,12 +119,21 @@ export default function Navbar({
 
           {/* Player Mini Badge if logged in */}
           {player && (
-            <div className="hidden lg:flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-temporal-border">
+            <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-temporal-border">
               <span className="text-lg">{player.avatar || "⚡"}</span>
               <div className="text-left">
                 <div className="text-xs font-bold text-slate-800 dark:text-gray-200 leading-tight">{player.name}</div>
                 <div className="text-[10px] text-cyan-600 dark:text-cyan-400 font-mono">{player.usn}</div>
               </div>
+              {onLogoutPlayer && (!player.status || player.status === "WAITING" || player.status === "ESCAPED" || player.status === "ELIMINATED") && (
+                <button
+                  onClick={onLogoutPlayer}
+                  className="p-1.5 ml-1 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+                  title="Switch / Change Participant"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           )}
 
