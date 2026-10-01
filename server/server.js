@@ -77,11 +77,11 @@ app.get("/api/export-csv", (req, res) => {
   res.send(csv);
 });
 
-// Broadcast periodic stats update to Host and Projector
+// Broadcast periodic stats update to all connected clients (Host, Projector, Participants)
 setInterval(() => {
   const stats = engine.getDashboardStats();
-  io.to("hosts").emit("dashboard_update", stats);
-  io.to("projectors").emit("projector_update", stats);
+  io.emit("dashboard_update", stats);
+  io.emit("projector_update", stats);
 }, 1000);
 
 // WebSocket real-time event orchestrator
@@ -119,8 +119,8 @@ io.on("connection", (socket) => {
       };
 
       if (callback) callback(res);
-      io.to("hosts").emit("dashboard_update", engine.getDashboardStats());
-      io.to("projectors").emit("projector_update", engine.getDashboardStats());
+      io.emit("dashboard_update", engine.getDashboardStats());
+      io.emit("projector_update", engine.getDashboardStats());
     } catch (err) {
       if (callback) callback({ success: false, error: err.message });
     }
@@ -161,7 +161,8 @@ io.on("connection", (socket) => {
       };
 
       if (callback) callback(res);
-      io.to("hosts").emit("dashboard_update", engine.getDashboardStats());
+      io.emit("dashboard_update", engine.getDashboardStats());
+      io.emit("projector_update", engine.getDashboardStats());
     } catch (err) {
       if (callback) callback({ success: false, error: err.message });
     }
@@ -186,8 +187,8 @@ io.on("connection", (socket) => {
       io.emit("player_eliminated", { usn, name: player?.name, level: result.level });
     }
 
-    io.to("hosts").emit("dashboard_update", engine.getDashboardStats());
-    io.to("projectors").emit("projector_update", engine.getDashboardStats());
+    io.emit("dashboard_update", engine.getDashboardStats());
+    io.emit("projector_update", engine.getDashboardStats());
   });
 
   // Anti-Cheat Violation Report from client
@@ -213,7 +214,7 @@ io.on("connection", (socket) => {
         io.emit("player_disqualified", { usn, violationType });
       }
 
-      io.to("hosts").emit("dashboard_update", engine.getDashboardStats());
+      io.emit("dashboard_update", engine.getDashboardStats());
       io.to("hosts").emit("new_anti_cheat_incident", res.violation);
     }
   });
@@ -225,17 +226,17 @@ io.on("connection", (socket) => {
 
     setTimeout(() => {
       engine.startEvent();
-      // Send question to each player
-      for (const [socketId, player] of engine.players.entries()) {
+      // Send question to each player via their unique room
+      for (const player of engine.registeredUSNs.values()) {
         const q = engine.getCurrentQuestion(player);
-        io.to(socketId).emit("game_started", {
+        io.to(`player_${player.usn}`).emit("game_started", {
           question: q,
           eventStatus: engine.status
         });
       }
       io.emit("event_started");
-      io.to("hosts").emit("dashboard_update", engine.getDashboardStats());
-      io.to("projectors").emit("projector_update", engine.getDashboardStats());
+      io.emit("dashboard_update", engine.getDashboardStats());
+      io.emit("projector_update", engine.getDashboardStats());
     }, 3500);
   });
 
@@ -243,8 +244,8 @@ io.on("connection", (socket) => {
   socket.on("host_trigger_wild_card", (candidateUSNs) => {
     const wildCardData = engine.setupWildCard(candidateUSNs);
     io.emit("wild_card_started", wildCardData);
-    io.to("hosts").emit("dashboard_update", engine.getDashboardStats());
-    io.to("projectors").emit("projector_update", engine.getDashboardStats());
+    io.emit("dashboard_update", engine.getDashboardStats());
+    io.emit("projector_update", engine.getDashboardStats());
   });
 
   // Wild Card: Pick Card
@@ -255,6 +256,8 @@ io.on("connection", (socket) => {
     if (result.card?.type === "BOMB") {
       io.emit("wild_card_winner", { usn, name: engine.registeredUSNs.get(usn)?.name });
     }
+    io.emit("dashboard_update", engine.getDashboardStats());
+    io.emit("projector_update", engine.getDashboardStats());
   });
 
   // Host: Start Final Round (Break the Loop)

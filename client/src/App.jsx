@@ -202,6 +202,10 @@ export default function App() {
       setEventStatus("FINAL_ROUND");
     });
 
+    socket.on("question_updated", ({ question }) => {
+      if (question) setCurrentQuestion(question);
+    });
+
     socket.on("database_purged", () => {
       localStorage.removeItem("timeloop_player");
       sessionStorage.removeItem("timeloop_player");
@@ -223,6 +227,7 @@ export default function App() {
       socket.off("projector_update");
       socket.off("start_countdown");
       socket.off("game_started");
+      socket.off("question_updated");
       socket.off("emergency_announcement");
       socket.off("disqualified");
       socket.off("pardoned");
