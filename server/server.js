@@ -302,23 +302,29 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Host: Disqualify / Pardon Player
+  // Host: Disqualify / Pardon / Revive Player (Individual)
   socket.on("host_manage_player", ({ usn, action }) => {
     const player = engine.registeredUSNs.get(usn);
     if (player) {
       if (action === "DISQUALIFY") {
         player.status = "DISQUALIFIED";
-        io.to(`player_${usn}`).emit("disqualified", { reason: "Disqualified by host" });
+        io.to(`player_${usn}`).emit("disqualified", { reason: "Disqualified by tournament host" });
       } else if (action === "PARDON") {
         player.strikes = 0;
         if (player.status === "DISQUALIFIED") {
           player.status = "ACTIVE";
+          io.to(`player_${usn}`).emit("pardoned", {});
         }
       } else if (action === "REVIVE") {
         player.status = "ACTIVE";
         player.attemptIndex = 0;
+        player.levelStartTime = Date.now();
+        const q = engine.getCurrentQuestion(player);
+        io.to(`player_${usn}`).emit("game_started", { question: q, eventStatus: engine.status });
       }
+      savePlayerToDB(player);
       io.to("hosts").emit("dashboard_update", engine.getDashboardStats());
+      io.to("projectors").emit("projector_update", engine.getDashboardStats());
     }
   });
 

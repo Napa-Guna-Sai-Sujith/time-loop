@@ -176,6 +176,10 @@ export default function App() {
       sounds.playElimination();
     });
 
+    socket.on("pardoned", () => {
+      setPlayer(prev => prev ? { ...prev, status: "ACTIVE", strikes: 0, disqualifyReason: null } : null);
+    });
+
     socket.on("wild_card_started", (wildCardData) => {
       setDashboardStats(prev => ({ ...prev, wildCard: wildCardData, status: "WILD_CARD" }));
       setEventStatus("WILD_CARD");
@@ -198,6 +202,7 @@ export default function App() {
       socket.off("game_started");
       socket.off("emergency_announcement");
       socket.off("disqualified");
+      socket.off("pardoned");
       socket.off("wild_card_started");
       socket.off("final_round_started");
       socket.off("event_reset");
