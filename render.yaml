@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: time-loop-tournament
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: ADMIN_PIN
+        value: "107"
