@@ -12,7 +12,8 @@ import {
   loadAllPlayersFromDB, 
   loadQuestionsFromDB, 
   saveQuestionToDB, 
-  saveAntiCheatLogToDB 
+  saveAntiCheatLogToDB,
+  purgeDatabaseAndReset
 } from "./db.js";
 
 dotenv.config();
@@ -257,6 +258,16 @@ io.on("connection", (socket) => {
     io.emit("event_reset");
     io.to("hosts").emit("dashboard_update", engine.getDashboardStats());
     io.to("projectors").emit("projector_update", engine.getDashboardStats());
+  });
+
+  // Host: Purge Database & Reset Everything
+  socket.on("host_purge_database", async (callback) => {
+    const dbRes = await purgeDatabaseAndReset();
+    engine.resetAll();
+    io.emit("event_reset");
+    io.to("hosts").emit("dashboard_update", engine.getDashboardStats());
+    io.to("projectors").emit("projector_update", engine.getDashboardStats());
+    if (callback) callback(dbRes);
   });
 
   // Host: Single Question Edit

@@ -3,7 +3,8 @@ import { socket } from "../utils/socket";
 import { 
   Terminal, Play, RotateCcw, Sparkles, Download, ShieldAlert, 
   Users, CheckCircle2, Skull, Unlock, Flame, Send, Search,
-  Award, Eye, RefreshCw, KeyRound, Radio, Lock, BookOpen, Edit3, Save, Check
+  Award, Eye, RefreshCw, KeyRound, Radio, Lock, BookOpen, Edit3, Save, Check,
+  Database, Trash2, AlertOctagon
 } from "lucide-react";
 
 export default function HostDashboardView({ stats, onLockAdmin }) {
@@ -40,8 +41,23 @@ export default function HostDashboardView({ stats, onLockAdmin }) {
   };
 
   const handleResetEvent = () => {
-    if (window.confirm("RESET ALL EVENT DATA? This resets levels and player progress.")) {
+    if (window.confirm("RESET ALL EVENT PROGRESS? This resets levels and player progress.")) {
       socket.emit("host_reset_event");
+    }
+  };
+
+  const handlePurgeDatabase = () => {
+    const confirmation = window.confirm(
+      "⚠️ DANGER: COMPLETE DATABASE RESET\n\nThis will permanently delete all registered participants, live scores, anti-cheat violations, and reset all 24 questions to default in the PostgreSQL database.\n\nAre you sure you want to completely wipe the database?"
+    );
+    if (confirmation) {
+      socket.emit("host_purge_database", (res) => {
+        if (res?.success) {
+          alert("✅ PostgreSQL Database completely wiped and factory reset!");
+        } else {
+          alert("Database reset error: " + (res?.error || "Unknown"));
+        }
+      });
     }
   };
 
@@ -201,10 +217,19 @@ export default function HostDashboardView({ stats, onLockAdmin }) {
 
           <button
             onClick={handleResetEvent}
-            className="p-2.5 rounded-xl bg-red-100 dark:bg-red-950/40 hover:bg-red-200 dark:hover:bg-red-900/60 border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 transition-all"
-            title="Reset All Progress"
+            className="p-2.5 rounded-xl bg-amber-100 dark:bg-amber-950/40 hover:bg-amber-200 dark:hover:bg-amber-900/60 border border-amber-300 dark:border-amber-800 text-amber-600 dark:text-amber-400 transition-all"
+            title="Reset Active Tournament Session Progress"
           >
             <RotateCcw className="w-4 h-4" />
+          </button>
+
+          <button
+            onClick={handlePurgeDatabase}
+            className="px-3.5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-mono text-xs uppercase font-extrabold flex items-center gap-1.5 shadow-lg shadow-red-600/30 transition-all border border-red-400"
+            title="Permanently erase all participants, scores, and questions stored in PostgreSQL"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>RESET DATABASE</span>
           </button>
         </div>
       </div>

@@ -274,3 +274,45 @@ export async function saveAntiCheatLogToDB(log) {
     console.error("Error saving anti-cheat log to DB:", err.message);
   }
 }
+
+// Complete Database Purge & Factory Reset
+export async function purgeDatabaseAndReset() {
+  const client = await pool.connect();
+  try {
+    console.log("🧨 Purging all data from PostgreSQL database...");
+    await client.query(`
+      TRUNCATE TABLE anti_cheat_logs, participants, tournament_state CASCADE;
+    `);
+    
+    // Clear and re-seed default questions
+    await client.query(`DELETE FROM questions;`);
+    for (const [levelStr, qList] of Object.entries(DEFAULT_QUESTIONS)) {
+      const lvl = parseInt(levelStr, 10);
+      for (let idx = 0; idx < qList.length; idx++) {
+        const q = qList[idx];
+        await client.query(`
+          INSERT INTO questions (id, level, question_index, category, type, question, options, answer, explanation)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
+        `, [
+          q.id || `L${lvl}_Q${idx + 1}`,
+          lvl,
+          idx,
+          q.category,
+          q.type,
+          q.question,
+          JSON.stringify(q.options || []),
+          q.answer,
+          q.explanation
+        ]);
+      }
+    }
+    console.log("✅ Database completely purged and reset to default!");
+    return { success: true };
+  } catch (err) {
+    console.error("❌ Database purge error:", err.message);
+    return { success: false, error: err.message };
+  } finally {
+    client.release();
+  }
+}
+
