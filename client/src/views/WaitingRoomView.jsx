@@ -82,28 +82,28 @@ export default function WaitingRoomView({ player, stats }) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="p-4 rounded-xl bg-slate-100 dark:bg-black/40 border border-slate-200 dark:border-temporal-border">
               <div className="text-cyan-700 dark:text-cyan-400 font-mono font-bold text-xs uppercase mb-1">
-                01. ONE ANSWER ESCAPES
+                01. 6 QUESTIONS PER LEVEL
               </div>
               <p className="text-xs text-slate-600 dark:text-gray-300 leading-relaxed">
-                You only need <strong>1 correct answer</strong> to clear each level. Solve fast to advance immediately.
-              </p>
-            </div>
-
-            <div className="p-4 rounded-xl bg-red-50 dark:bg-black/40 border border-red-200 dark:border-red-900/40">
-              <div className="text-red-600 dark:text-red-400 font-mono font-bold text-xs uppercase mb-1">
-                02. 15 MIN / LEVEL & REPLACEMENT
-              </div>
-              <p className="text-xs text-slate-600 dark:text-gray-300 leading-relaxed font-mono">
-                15 minutes per level. Wrong answers replace the question (6 questions max). Fail 6 times = Elimination.
+                In each level, you must attempt and solve all <strong>6 questions</strong> sequentially before advancing to the next level.
               </p>
             </div>
 
             <div className="p-4 rounded-xl bg-purple-50 dark:bg-black/40 border border-purple-200 dark:border-purple-900/40">
               <div className="text-purple-700 dark:text-purple-400 font-mono font-bold text-xs uppercase mb-1">
+                02. 15 MIN GLOBAL LEVEL LIMIT
+              </div>
+              <p className="text-xs text-slate-600 dark:text-gray-300 leading-relaxed">
+                You have a 15-minute global countdown per level to complete all 6 questions. If time expires, you are eliminated.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-xl bg-red-50 dark:bg-black/40 border border-red-200 dark:border-red-900/40">
+              <div className="text-red-700 dark:text-red-400 font-mono font-bold text-xs uppercase mb-1">
                 03. ZERO CHEATING
               </div>
               <p className="text-xs text-slate-600 dark:text-gray-300 leading-relaxed">
-                Tab switching, clipboard copying, or window blurs trigger auto-strikes and elimination.
+                Tab switching, clipboard copying, or window blurs trigger auto-strikes and immediate disqualification.
               </p>
             </div>
           </div>

@@ -98,38 +98,32 @@ export default function CircularTimer({
       {/* 6 Questions Progression Indicator for Current Level */}
       <div className="mt-4 flex flex-col items-center gap-1.5 w-full">
         <div className="text-[10px] font-mono text-slate-500 dark:text-gray-400 uppercase tracking-wider">
-          Level {level} Questions (6 Total)
+          Level {level} Progress (6 Questions)
         </div>
         <div className="flex items-center justify-center gap-1.5 w-full">
           {[1, 2, 3, 4, 5, 6].map((qNum) => {
             const isCurrent = qNum === attemptNumber;
-            const isFailed = qNum < attemptNumber;
+            const isCompleted = qNum < attemptNumber;
 
             return (
               <div 
                 key={qNum}
                 className={`flex-1 flex flex-col items-center py-1.5 rounded-lg border text-center transition-all ${
                   isCurrent
-                    ? "bg-cyan-100 dark:bg-cyan-950 border-cyan-500 text-cyan-800 dark:text-cyan-300 font-bold scale-105 ring-2 ring-cyan-500/30"
-                    : isFailed
-                    ? "bg-red-50 dark:bg-red-950/60 border-red-300 dark:border-red-900/60 text-red-600 dark:text-red-400 line-through opacity-70"
+                    ? "bg-cyan-100 dark:bg-cyan-950 border-cyan-500 text-cyan-800 dark:text-cyan-300 font-bold scale-105 ring-2 ring-cyan-500/30 shadow-md"
+                    : isCompleted
+                    ? "bg-green-100 dark:bg-green-950/60 border-green-400 dark:border-green-600/80 text-green-800 dark:text-green-300 font-semibold"
                     : "bg-slate-100 dark:bg-black/40 border-slate-200 dark:border-gray-800 text-slate-400 dark:text-gray-600"
                 }`}
               >
-                <span className="text-[10px] font-mono">Q{qNum}</span>
+                <span className="text-[10px] font-mono">
+                  {isCompleted ? `✓ Q${qNum}` : `Q${qNum}`}
+                </span>
               </div>
             );
           })}
         </div>
       </div>
-
-      {/* Replacement Notice on failure */}
-      {attemptNumber > 1 && (
-        <div className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-mono px-3 py-1 rounded-full bg-red-100 dark:bg-red-950/80 border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 animate-pulse">
-          <Flame className="w-3.5 h-3.5 text-red-500" />
-          <span>WRONG ANSWER: REPLACED WITH Q{attemptNumber}/6</span>
-        </div>
-      )}
     </div>
   );
 }

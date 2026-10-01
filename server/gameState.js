@@ -150,6 +150,31 @@ export class GameEngine {
       return { success: false, reason: "Player not active" };
     }
 
+    // Check if 15-minute level window expired
+    const now = Date.now();
+    const elapsedSeconds = Math.floor((now - (player.levelStartTime || now)) / 1000);
+    if (elapsedSeconds >= LEVEL_TIME_SECONDS || answerGiven === "__LEVEL_TIMEOUT__") {
+      player.status = "ELIMINATED";
+      const eliminationEntry = {
+        usn: player.usn,
+        name: player.name,
+        department: player.department,
+        eliminatedAt: Date.now(),
+        level: player.level,
+        attempt: player.attemptIndex + 1,
+        reason: "15-minute level timer expired",
+        order: this.eliminationOrder.length + 1
+      };
+      this.eliminationOrder.push(eliminationEntry);
+      return {
+        correct: false,
+        status: "ELIMINATED",
+        level: player.level,
+        eliminationEntry,
+        nextQuestion: null
+      };
+    }
+
     const currentLevel = player.level;
     const currentAttempt = player.attemptIndex;
     const levelQuestions = this.questions[currentLevel];
@@ -161,31 +186,55 @@ export class GameEngine {
 
     const isCorrect = this.validateAnswer(question, answerGiven);
 
+    // Track score & answers
     if (isCorrect) {
-      // ONE correct answer escapes the level!
+      player.score += 100;
+    }
+
+    if (!player.levelHistory[currentLevel]) {
       player.levelHistory[currentLevel] = {
-        cleared: true,
-        attemptNumber: currentAttempt + 1,
-        clearedAt: Date.now(),
-        timeSpent: Math.floor((Date.now() - (player.levelStartTime || Date.now())) / 1000)
+        questions: {},
+        startedAt: player.levelStartTime || Date.now()
       };
-      player.score += (7 - currentAttempt) * 150;
+    }
+    player.levelHistory[currentLevel].questions[currentAttempt + 1] = {
+      correct: isCorrect,
+      answeredAt: Date.now()
+    };
+
+    // Check if more questions remain in this level (Questions 1 to 5)
+    if (currentAttempt < 5) {
+      player.attemptIndex += 1;
+      return {
+        correct: isCorrect,
+        status: "NEXT_QUESTION",
+        level: player.level,
+        attemptNumber: player.attemptIndex + 1,
+        totalQuestions: 6,
+        nextQuestion: this.getCurrentQuestion(player)
+      };
+    } else {
+      // Completed all 6 questions in this level!
+      player.levelHistory[currentLevel].cleared = true;
+      player.levelHistory[currentLevel].clearedAt = Date.now();
+      player.levelHistory[currentLevel].timeSpent = Math.floor((Date.now() - (player.levelStartTime || Date.now())) / 1000);
 
       if (currentLevel >= MAX_LEVELS) {
-        // CONQUERED ALL 4 LEVELS -> ESCAPED TIME LOOP!
+        // CONQUERED ALL 4 LEVELS (ALL 24 QUESTIONS ATTEMPTED) -> ESCAPED TIME LOOP!
         player.status = "ESCAPED";
         const escapedEntry = {
           usn: player.usn,
           name: player.name,
           department: player.department,
           escapedAt: Date.now(),
+          score: player.score,
           totalTimeMs: Date.now() - (this.startTime || Date.now()),
           rank: this.escapedOrder.length + 1
         };
         this.escapedOrder.push(escapedEntry);
         
         return {
-          correct: true,
+          correct: isCorrect,
           status: "ESCAPED",
           level: currentLevel,
           escapedEntry,
@@ -198,16 +247,13 @@ export class GameEngine {
         player.levelStartTime = Date.now();
 
         return {
-          correct: true,
+          correct: isCorrect,
           status: "LEVEL_CLEARED",
           level: player.level,
           attemptNumber: 1,
           nextQuestion: this.getCurrentQuestion(player)
         };
       }
-    } else {
-      // Wrong answer or timeout -> Replace question with the other one (next attempt in level)
-      return this.handleFailure(player);
     }
   }
 

@@ -48,7 +48,7 @@ export default function Navbar({
               </span>
             </div>
             <p className="text-[10px] text-slate-500 dark:text-gray-400 font-mono hidden sm:block">
-              4 Levels • 15 Min / Level • 1 Correct Escapes
+              4 Levels • 6 Questions / Level • 15 Min / Level
             </p>
           </div>
         </div>

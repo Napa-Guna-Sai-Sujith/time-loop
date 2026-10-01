@@ -86,7 +86,7 @@ export default function CertificateModal({
       590
     );
     ctx.fillText(
-      `the 6-Level diminishing time continuum and finishing as:`,
+      `the 4-Level quantum time continuum and finishing as:`,
       960,
       635
     );

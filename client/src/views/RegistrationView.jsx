@@ -48,9 +48,9 @@ export default function RegistrationView({ onRegister, isSubmitting }) {
           </h1>
 
           <p className="text-sm text-slate-600 dark:text-gray-400 font-mono max-w-md mx-auto">
-            Every time you fail, the loop becomes faster.
+            4 Levels • 6 Questions per Level • 15 Minutes per Level
             <br />
-            <span className="text-cyan-600 dark:text-cyan-400 font-semibold">16s → 14s → 12s → 10s → 8s → 6s</span>
+            <span className="text-cyan-600 dark:text-cyan-400 font-semibold">Solve and attempt all 6 questions to conquer the loop!</span>
           </p>
         </div>
 

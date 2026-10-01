@@ -232,22 +232,22 @@ export default function App() {
 
     socket.emit("submit_answer", { usn: player.usn, answer: answerGiven }, (res) => {
       setIsSubmitting(false);
-      if (res?.correct) {
-        if (res.status === "ESCAPED") {
-          setPlayer(prev => ({ ...prev, status: "ESCAPED" }));
-          setCurrentQuestion(null);
-        } else {
-          setPlayer(prev => ({ ...prev, level: res.level, attemptIndex: 0 }));
-          if (res.nextQuestion) setCurrentQuestion(res.nextQuestion);
-        }
-      } else {
-        if (res.status === "ELIMINATED") {
-          setPlayer(prev => ({ ...prev, status: "ELIMINATED" }));
-          setCurrentQuestion(null);
-        } else {
-          setPlayer(prev => ({ ...prev, attemptIndex: (prev.attemptIndex || 0) + 1 }));
-          if (res.nextQuestion) setCurrentQuestion(res.nextQuestion);
-        }
+      if (res?.status === "ESCAPED") {
+        setPlayer(prev => ({ ...prev, status: "ESCAPED" }));
+        setCurrentQuestion(null);
+      } else if (res?.status === "LEVEL_CLEARED") {
+        setPlayer(prev => ({ ...prev, level: res.level, attemptIndex: 0 }));
+        if (res.nextQuestion) setCurrentQuestion(res.nextQuestion);
+      } else if (res?.status === "ELIMINATED") {
+        setPlayer(prev => ({ ...prev, status: "ELIMINATED" }));
+        setCurrentQuestion(null);
+      } else if (res?.status === "NEXT_QUESTION" || res?.nextQuestion) {
+        setPlayer(prev => ({
+          ...prev,
+          level: res.level || prev.level,
+          attemptIndex: res.attemptNumber !== undefined ? res.attemptNumber - 1 : (prev.attemptIndex || 0) + 1
+        }));
+        if (res.nextQuestion) setCurrentQuestion(res.nextQuestion);
       }
     });
   };

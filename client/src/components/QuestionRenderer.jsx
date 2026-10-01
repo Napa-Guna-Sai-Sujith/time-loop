@@ -168,9 +168,9 @@ export default function QuestionRenderer({
       )}
 
       {/* Helper footer */}
-      <div className="mt-6 pt-3 border-t border-slate-200 dark:border-temporal-border flex items-center justify-between text-[11px] font-mono text-slate-500 dark:text-gray-500">
-        <span>⚡ ONE correct answer immediately advances to the next level</span>
-        <span>Keyboard: 1-4 for options</span>
+      <div className="mt-6 pt-3 border-t border-slate-200 dark:border-temporal-border flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] font-mono text-slate-500 dark:text-gray-500 text-center sm:text-left">
+        <span>⚡ Solve/attempt all 6 questions in each level before the timer ends</span>
+        <span className="hidden sm:inline">Keyboard: 1-4 for options</span>
       </div>
     </div>
   );

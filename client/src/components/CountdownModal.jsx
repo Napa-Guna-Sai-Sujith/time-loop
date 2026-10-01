@@ -41,7 +41,7 @@ export default function CountdownModal({ countdown, onComplete }) {
         </div>
 
         <p className="text-sm font-mono text-gray-400 max-w-sm mx-auto uppercase tracking-wider">
-          Level 1 starting. 16 Seconds on the clock. One correct answer saves you.
+          Level 1 starting. 15 Minutes on the clock. Solve all 6 questions to clear each level.
         </p>
       </div>
     </div>
