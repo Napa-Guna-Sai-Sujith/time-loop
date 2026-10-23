@@ -136,9 +136,6 @@ async def start_game(
     if not settings:
         raise HTTPException(status_code=404, detail="Settings not found.")
 
-    if settings.status == "RUNNING":
-        raise HTTPException(status_code=400, detail="The game is already active.")
-
     teams = db.query(Team).filter(Team.is_active == True).all()
     min_required = settings.min_teams_to_start or 1
     if len(teams) < min_required:
@@ -157,16 +154,19 @@ async def start_game(
 
     # Activate teams and game
     settings.status = "RUNNING"
-    settings.started_at = datetime.datetime.utcnow()
+    if not settings.started_at:
+        settings.started_at = datetime.datetime.utcnow()
     settings.paused_at = None
 
     for t in teams:
         if t.status in ["WAITING", "PAUSED"]:
             t.status = "ACTIVE"
-            t.current_level = 1
-            t.tokens_remaining = settings.starting_tokens
+            if t.current_level < 1:
+                t.current_level = 1
+            if t.tokens_remaining <= 0:
+                t.tokens_remaining = settings.starting_tokens
 
-    audit = AuditLog(action="START_GAME", details="Organizer triggered START GAME countdown.", actor=org.username)
+    audit = AuditLog(action="START_GAME", details="Organizer triggered START GAME.", actor=org.username)
     db.add(audit)
     db.commit()
 

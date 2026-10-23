@@ -37,6 +37,12 @@ def get_player_state(
                 detail="Level 5 (The Final) is reserved exclusively for the Top 3 qualified teams once authorized by the organizer."
             )
 
+    if event_status == "RUNNING" and team.status == "WAITING":
+        team.status = "ACTIVE"
+        team.current_level = 1
+        team.tokens_remaining = settings.starting_tokens if settings else 3
+        db.commit()
+
     active_question = None
     if event_status == "RUNNING" and team.status in ["ACTIVE", "QUALIFIED_FINAL"]:
         active_question = get_current_question_view(db, team, settings)
@@ -56,7 +62,12 @@ def get_player_state(
             "total_score": team.total_score,
             "is_qualified": team.is_qualified
         },
-        "active_question": active_question
+        "active_question": active_question,
+        "current_question": active_question,
+        "remaining_seconds": active_question.remaining_seconds if active_question else (settings.timer_duration_seconds if settings else 900),
+        "tokens": team.tokens_remaining,
+        "question_number": active_question.question_number if active_question else 1,
+        "total_questions": active_question.total_questions if active_question else (settings.questions_per_attempt if settings else 6)
     }
 
 @router.post("/submit-answer", response_model=AnswerSubmitResponse)

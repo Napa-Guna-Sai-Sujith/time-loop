@@ -111,13 +111,14 @@ export default function App() {
       if (state.team) {
         setTeam(state.team);
       }
-      if (state.current_question) {
+      const q = state.current_question || state.active_question;
+      if (q) {
         setCurrentQuestion({
-          ...state.current_question,
-          remaining_seconds: state.remaining_seconds,
-          tokens: state.tokens,
-          question_number: state.question_number,
-          total_questions: state.total_questions
+          ...q,
+          remaining_seconds: q.remaining_seconds !== undefined ? q.remaining_seconds : state.remaining_seconds,
+          tokens: q.tokens !== undefined ? q.tokens : state.tokens,
+          question_number: q.question_number !== undefined ? q.question_number : state.question_number,
+          total_questions: q.total_questions !== undefined ? q.total_questions : state.total_questions
         });
       }
     } catch {
@@ -270,7 +271,14 @@ export default function App() {
       return <EscapedView team={team} />;
     }
 
-    if (eventStatus === "LOBBY" || team.status === "WAITING") {
+    if (eventStatus === "LOBBY") {
+      return <WaitingRoomView team={team} onLogout={handleTeamLogout} />;
+    }
+
+    if (team.status === "WAITING") {
+      if (eventStatus === "RUNNING") {
+        refreshPlayerState();
+      }
       return <WaitingRoomView team={team} onLogout={handleTeamLogout} />;
     }
 
@@ -294,6 +302,19 @@ export default function App() {
           onTimeout={handleTimeout}
           isSubmitting={isSubmitting}
         />
+      );
+    }
+
+    // If game is running but question is loading, show syncing indicator
+    if (eventStatus === "RUNNING") {
+      return (
+        <div className="min-h-[calc(100vh-80px)] flex flex-col items-center justify-center p-4">
+          <div className="w-16 h-16 rounded-2xl bg-cyan-500/20 border border-cyan-400 flex items-center justify-center mb-4 animate-spin">
+            <span className="text-2xl">⚡</span>
+          </div>
+          <h2 className="text-xl font-mono font-bold text-slate-900 dark:text-white mb-1">SYNCHRONIZING TIMELINE...</h2>
+          <p className="text-xs font-mono text-cyan-600 dark:text-cyan-400">Loading your Level {team.level || 1} challenge...</p>
+        </div>
       );
     }
 
