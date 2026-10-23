@@ -24,9 +24,10 @@ app = FastAPI(
     version="2.0.0"
 )
 
-# CORS configuration for development and production
+# CORS configuration for development and production (supports Vercel, Render, and localhost)
 app.add_middleware(
     CORSMiddleware,
+    allow_origin_regex=r"^https?://.*",
     allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],

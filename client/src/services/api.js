@@ -1,5 +1,6 @@
 // Centralized API Client for LOOP Platform
-const API_BASE = "/api";
+const rawApiBase = import.meta.env.VITE_API_URL || "";
+const API_BASE = rawApiBase ? (rawApiBase.endsWith("/api") ? rawApiBase : `${rawApiBase.replace(/\/+$/, "")}/api`) : "/api";
 
 function getAuthHeader() {
   const token = localStorage.getItem("loop_token") || sessionStorage.getItem("loop_token");

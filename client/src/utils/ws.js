@@ -18,9 +18,19 @@ class LoopSocketClient {
       return;
     }
 
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.host;
-    const wsUrl = `${protocol}//${host}/ws?role=${encodeURIComponent(role)}&identifier=${encodeURIComponent(identifier)}`;
+    let wsUrl;
+    const customWs = import.meta.env.VITE_WS_URL;
+    const customApi = import.meta.env.VITE_API_URL;
+    if (customWs) {
+      wsUrl = `${customWs.replace(/\/+$/, "")}/ws?role=${encodeURIComponent(role)}&identifier=${encodeURIComponent(identifier)}`;
+    } else if (customApi) {
+      const base = customApi.replace(/\/api\/?$/, "").replace(/^http:/, "ws:").replace(/^https:/, "wss:");
+      wsUrl = `${base.replace(/\/+$/, "")}/ws?role=${encodeURIComponent(role)}&identifier=${encodeURIComponent(identifier)}`;
+    } else {
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const host = window.location.host;
+      wsUrl = `${protocol}//${host}/ws?role=${encodeURIComponent(role)}&identifier=${encodeURIComponent(identifier)}`;
+    }
 
     try {
       this.isConnecting = true;
