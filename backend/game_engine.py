@@ -282,28 +282,65 @@ def submit_team_answer(db: Session, team: Team, answer_text: str, settings: Even
             state.expires_at = state.expires_at - datetime.timedelta(seconds=150)
             db.commit()
 
-        # Replace question with another from same category & difficulty.
-        replacement = find_replacement_question(db, question, exclude_ids=q_ids)
-        if replacement:
-            q_ids[idx] = replacement.id
-            state.active_question_ids = json.dumps(q_ids)
+        # Check if completed all 6 questions in this level
+        if idx + 1 >= len(q_ids):
+            state.is_completed = True
+            time_spent = (now - state.started_at).total_seconds()
+            state.time_spent_seconds = time_spent
+            team.total_time_seconds += time_spent
+
+            team.tokens_remaining = settings.starting_tokens
+
+            if team.current_level >= 4:
+                team.status = "ESCAPED"
+                team.total_score = calculate_team_score(team, settings)
+                db.commit()
+                return {
+                    "correct": False,
+                    "message": "Level completed! Conquered all 4 levels!",
+                    "status": "ESCAPED",
+                    "explanation": explanation,
+                    "next_question": None,
+                    "tokens_remaining": team.tokens_remaining,
+                    "current_level": team.current_level,
+                    "total_score": team.total_score,
+                    "time_penalty_applied": 150
+                }
+            else:
+                team.current_level += 1
+                team.total_score = calculate_team_score(team, settings)
+                db.commit()
+
+                next_q = get_current_question_view(db, team, settings)
+                return {
+                    "correct": False,
+                    "message": f"Incorrect answer (-2m 30s penalty). Warping to Level {team.current_level}...",
+                    "status": "LEVEL_CLEARED",
+                    "explanation": explanation,
+                    "next_question": next_q,
+                    "tokens_remaining": team.tokens_remaining,
+                    "current_level": team.current_level,
+                    "total_score": team.total_score,
+                    "time_penalty_applied": 150
+                }
+        else:
+            # Advance to next question in current level
+            state.current_question_index += 1
+            team.total_score = calculate_team_score(team, settings)
             db.commit()
 
-        team.total_score = calculate_team_score(team, settings)
-        db.commit()
-
-        next_q = get_current_question_view(db, team, settings)
-        return {
-            "correct": False,
-            "message": "Incorrect answer: -2 min 30 sec penalty deducted from timeline. Question replaced.",
-            "status": "QUESTION_REPLACED",
-            "explanation": explanation,
-            "next_question": next_q,
-            "tokens_remaining": team.tokens_remaining,
-            "current_level": team.current_level,
-            "total_score": team.total_score,
-            "time_penalty_applied": 150
-        }
+            next_q = get_current_question_view(db, team, settings)
+            return {
+                "correct": False,
+                "message": "Incorrect answer: -2 min 30 sec penalty deducted. Advancing to next question...",
+                "status": "NEXT_QUESTION",
+                "explanation": explanation,
+                "next_question": next_q,
+                "tokens_remaining": team.tokens_remaining,
+                "current_level": team.current_level,
+                "total_score": team.total_score,
+                "time_penalty_applied": 150
+            }
 
 def find_replacement_question(db: Session, original_q: Question, exclude_ids: List[int]) -> Optional[Question]:
     """Finds a replacement question testing the same category and similar difficulty."""

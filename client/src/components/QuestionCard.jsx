@@ -147,7 +147,7 @@ export default function QuestionCard({ question, onSubmitAnswer, isSubmitting = 
 
       {/* Footer Helper */}
       <div className="mt-6 pt-3 border-t border-slate-200 dark:border-temporal-border flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] font-mono text-slate-500 dark:text-gray-500">
-        <span>⚡ Wrong answers replace question with another from {question.category}</span>
+        <span>⚡ Wrong answers deduct 2m 30s penalty and advance to next question</span>
         <span className="hidden sm:inline">Press 1-4 on keyboard to select option</span>
       </div>
     </div>

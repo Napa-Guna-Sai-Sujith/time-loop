@@ -139,9 +139,11 @@ export default function App() {
       }),
       wsClient.on("game_paused", () => {
         setEventStatus("PAUSED");
+        refreshPlayerState();
       }),
       wsClient.on("game_resumed", () => {
         setEventStatus("RUNNING");
+        refreshPlayerState();
       }),
       wsClient.on("event_reset", () => {
         setEventStatus("LOBBY");
@@ -172,6 +174,20 @@ export default function App() {
       unsubs.forEach(unsub => unsub());
     };
   }, [organizer, team, refreshPlayerState]);
+
+  // Fast Auto-Refresh Feature: Instantly detects when admin starts or resumes the game without manual reload!
+  useEffect(() => {
+    if (!team) return;
+
+    // Fast 1.5s auto-poll when paused, lobby, or waiting; 5s fallback during active gameplay
+    const pollIntervalMs = (eventStatus === "PAUSED" || eventStatus === "LOBBY" || team?.status === "WAITING") ? 1500 : 5000;
+
+    const interval = setInterval(() => {
+      refreshPlayerState();
+    }, pollIntervalMs);
+
+    return () => clearInterval(interval);
+  }, [team?.status, eventStatus, refreshPlayerState]);
 
   // Auth Handlers
   const handleOrganizerLogin = (org) => {

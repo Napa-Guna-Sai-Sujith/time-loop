@@ -103,7 +103,7 @@ export default function GamePlayView({
         }
         setPenaltyNotice(true);
         setTimeout(() => setPenaltyNotice(false), 2500);
-        setFeedbackToast(res?.message || "Incorrect answer: -2 min 30 sec deducted from timeline. Question replaced.");
+        setFeedbackToast(res?.message || "Incorrect answer: -2 min 30 sec penalty deducted. Advancing to next question...");
         setTimeout(() => setFeedbackToast(""), 3500);
       }
     } catch (err) {
