@@ -133,6 +133,7 @@ class AnswerSubmitResponse(BaseModel):
     tokens_remaining: int
     current_level: int
     total_score: float
+    team: Optional[Dict[str, Any]] = None
 
 class TimeoutRequest(BaseModel):
     pass

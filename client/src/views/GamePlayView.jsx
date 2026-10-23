@@ -25,21 +25,22 @@ export default function GamePlayView({
   const [feedbackToast, setFeedbackToast] = useState("");
   const [penaltyNotice, setPenaltyNotice] = useState(false);
 
+  const activeLevel = currentQuestion?.level || team?.current_level || 1;
   const timerRef = useRef(null);
-  const currentLevelRef = useRef(team?.current_level || 1);
+  const currentLevelRef = useRef(activeLevel);
   const initializedRef = useRef(false);
 
   // Initialize once on mount or when level changes
   useEffect(() => {
-    if (team?.current_level && team.current_level !== currentLevelRef.current) {
-      currentLevelRef.current = team.current_level;
+    if (activeLevel !== currentLevelRef.current) {
+      currentLevelRef.current = activeLevel;
       // Level advanced: give fresh 15-minute countdown
       setSecondsRemaining(15 * 60);
     } else if (!initializedRef.current && currentQuestion?.remaining_seconds !== undefined) {
       initializedRef.current = true;
       setSecondsRemaining(currentQuestion.remaining_seconds);
     }
-  }, [team?.current_level, currentQuestion?.remaining_seconds]);
+  }, [activeLevel, currentQuestion?.remaining_seconds]);
 
   // CONTINUOUS TIMER COUNTDOWN: Continues smoothly across all questions without restarting!
   useEffect(() => {
@@ -116,12 +117,12 @@ export default function GamePlayView({
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-5 pb-4 border-b border-slate-200 dark:border-temporal-border">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-cyan-100 dark:bg-cyan-950/90 border border-cyan-400 dark:border-cyan-500 flex items-center justify-center font-mono font-black text-xl text-cyan-700 dark:text-cyan-300 shadow-lg shadow-cyan-500/20 shrink-0">
-            L{team?.current_level || 1}
+            L{activeLevel}
           </div>
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white font-mono">
-                LEVEL {team?.current_level || 1} OF 4
+                LEVEL {activeLevel} OF 4
               </h2>
               <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-700">
                 15 MIN ATTEMPT
@@ -136,8 +137,8 @@ export default function GamePlayView({
         {/* 4-Level Progress Badges */}
         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
           {[1, 2, 3, 4].map((lvl) => {
-            const isCompleted = lvl < (team?.current_level || 1);
-            const isCurrent = lvl === (team?.current_level || 1);
+            const isCompleted = lvl < activeLevel;
+            const isCurrent = lvl === activeLevel;
 
             return (
               <div
@@ -172,7 +173,7 @@ export default function GamePlayView({
               secondsRemaining={secondsRemaining}
               maxSeconds={maxSeconds}
               attemptNumber={currentQuestion?.question_number || 1}
-              level={team?.current_level || 1}
+              level={activeLevel}
             />
           </div>
 

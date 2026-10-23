@@ -96,6 +96,20 @@ async def submit_answer(
         "tokens_remaining": team.tokens_remaining
     })
 
+    team_dict = {
+        "id": team.id,
+        "team_id": team.team_id,
+        "team_name": team.team_name,
+        "avatar": team.avatar,
+        "department": team.department,
+        "current_level": team.current_level,
+        "tokens_remaining": team.tokens_remaining,
+        "status": team.status,
+        "total_questions_solved": team.total_questions_solved,
+        "total_score": team.total_score,
+        "is_qualified": team.is_qualified
+    }
+
     return AnswerSubmitResponse(
         correct=result["correct"],
         message=result["message"],
@@ -104,7 +118,8 @@ async def submit_answer(
         next_question=result.get("next_question"),
         tokens_remaining=result["tokens_remaining"],
         current_level=result["current_level"],
-        total_score=result["total_score"]
+        total_score=result["total_score"],
+        team=team_dict
     )
 
 @router.post("/timeout")
@@ -127,5 +142,19 @@ async def trigger_timeout(
         "questions_solved": team.total_questions_solved,
         "tokens_remaining": team.tokens_remaining
     })
+
+    result["team"] = {
+        "id": team.id,
+        "team_id": team.team_id,
+        "team_name": team.team_name,
+        "avatar": team.avatar,
+        "department": team.department,
+        "current_level": team.current_level,
+        "tokens_remaining": team.tokens_remaining,
+        "status": team.status,
+        "total_questions_solved": team.total_questions_solved,
+        "total_score": team.total_score,
+        "is_qualified": team.is_qualified
+    }
 
     return result

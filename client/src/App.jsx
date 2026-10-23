@@ -204,6 +204,14 @@ export default function App() {
       const res = await api.submitAnswer(answer);
       if (res.team) {
         setTeam(res.team);
+      } else if (res.current_level !== undefined) {
+        setTeam((prev) => prev ? {
+          ...prev,
+          current_level: res.current_level,
+          tokens_remaining: res.tokens_remaining !== undefined ? res.tokens_remaining : prev.tokens_remaining,
+          total_score: res.total_score !== undefined ? res.total_score : prev.total_score,
+          status: (res.status === "ESCAPED" || res.status === "ELIMINATED") ? res.status : prev.status
+        } : prev);
       }
       if (res.next_question) {
         setCurrentQuestion({
@@ -230,6 +238,14 @@ export default function App() {
       const res = await api.triggerTimeout();
       if (res.team) {
         setTeam(res.team);
+      } else if (res.current_level !== undefined) {
+        setTeam((prev) => prev ? {
+          ...prev,
+          current_level: res.current_level,
+          tokens_remaining: res.tokens_remaining !== undefined ? res.tokens_remaining : prev.tokens_remaining,
+          total_score: res.total_score !== undefined ? res.total_score : prev.total_score,
+          status: (res.status === "ESCAPED" || res.status === "ELIMINATED") ? res.status : prev.status
+        } : prev);
       }
       if (res.next_question) {
         setCurrentQuestion({
