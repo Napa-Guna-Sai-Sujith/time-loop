@@ -52,9 +52,9 @@ def on_startup():
 def health_check():
     return {"status": "ok", "app": "LOOP", "version": "2.0.0"}
 
-# Serve frontend build if dist folder exists
+# Serve frontend build if dist folder exists, otherwise return API status
 dist_dir = Path(__file__).resolve().parent.parent / "client" / "dist"
-if dist_dir.exists():
+if dist_dir.exists() and (dist_dir / "index.html").exists():
     app.mount("/assets", StaticFiles(directory=dist_dir / "assets"), name="assets")
 
     @app.get("/{full_path:path}")
@@ -66,6 +66,16 @@ if dist_dir.exists():
         if file_path.exists() and file_path.is_file():
             return FileResponse(file_path)
         return FileResponse(dist_dir / "index.html")
+else:
+    @app.get("/")
+    def root_status():
+        return {
+            "status": "online",
+            "service": "LOOP Backend API",
+            "version": "2.0.0",
+            "health": "/api/health",
+            "docs": "/docs"
+        }
 
 if __name__ == "__main__":
     import uvicorn
