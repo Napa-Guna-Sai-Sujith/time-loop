@@ -1,6 +1,9 @@
 // Centralized API Client for LOOP Platform
-const rawApiBase = import.meta.env.VITE_API_URL || "";
-const API_BASE = rawApiBase ? (rawApiBase.endsWith("/api") ? rawApiBase : `${rawApiBase.replace(/\/+$/, "")}/api`) : "/api";
+let rawApiBase = (import.meta.env.VITE_API_URL || "").trim().replace(/\/+$/, "");
+if (rawApiBase.endsWith("/api")) {
+  rawApiBase = rawApiBase.substring(0, rawApiBase.length - 4);
+}
+const API_BASE = rawApiBase ? `${rawApiBase}/api` : "/api";
 
 function getAuthHeader() {
   const token = localStorage.getItem("loop_token") || sessionStorage.getItem("loop_token");
@@ -283,17 +286,50 @@ function jsonBody(obj) {
 }
 
 async function handleResponse(res) {
+  let text = "";
+  try {
+    text = await res.text();
+  } catch (_) {
+    text = "";
+  }
+
+  // Check if server returned HTML (common when VITE_API_URL is missing on Vercel, or Render service is sleeping/502)
+  const isHtml = text.includes("<!DOCTYPE") || text.includes("<html") || text.includes("<head");
+
   if (!res.ok) {
-    let errorDetail = "Request failed";
-    try {
-      const errJson = await res.json();
-      errorDetail = errJson.detail || errJson.message || JSON.stringify(errJson);
-    } catch (_) {
-      errorDetail = await res.text() || res.statusText;
+    let errorDetail = `Request failed (${res.status} ${res.statusText || ""})`.trim();
+    if (isHtml) {
+      if (res.status === 404) {
+        errorDetail = "API endpoint not found (404). Please ensure VITE_API_URL is set to your Render backend URL in Vercel.";
+      } else if (res.status === 502 || res.status === 503) {
+        errorDetail = "Backend is waking up on Render (free tier cold start). Please wait ~30 seconds and try again.";
+      } else {
+        errorDetail = `Backend service error (${res.status}). Please check your Render backend logs.`;
+      }
+    } else if (text) {
+      try {
+        const errJson = JSON.parse(text);
+        errorDetail = errJson.detail || errJson.message || JSON.stringify(errJson);
+      } catch (_) {
+        errorDetail = text.length > 200 ? text.substring(0, 200) + "..." : text;
+      }
     }
     const err = new Error(errorDetail);
     err.status = res.status;
     throw err;
   }
-  return res.json();
+
+  // Even if res.ok is true, if response is HTML (Vercel SPA rewrite fallback for missing API)
+  if (isHtml) {
+    throw new Error(
+      "Received HTML instead of API response. Please set VITE_API_URL to your Render backend URL in Vercel Project Settings."
+    );
+  }
+
+  if (!text) return {};
+  try {
+    return JSON.parse(text);
+  } catch (_) {
+    return text;
+  }
 }
