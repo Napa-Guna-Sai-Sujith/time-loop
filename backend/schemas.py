@@ -119,6 +119,7 @@ class QuestionPlayerView(BaseModel):
     question_number: int
     total_questions: int = 6
     remaining_seconds: int
+    question_results: Optional[List[str]] = None
 
 # --- Gameplay Schemas ---
 class AnswerSubmitRequest(BaseModel):

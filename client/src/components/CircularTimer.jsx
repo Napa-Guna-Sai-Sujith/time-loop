@@ -6,7 +6,8 @@ export default function CircularTimer({
   maxSeconds = 900, 
   attemptNumber = 1,
   level = 1,
-  hasPenalty = false
+  hasPenalty = false,
+  questionResults = []
 }) {
   const percentage = Math.max(0, Math.min(100, (secondsRemaining / maxSeconds) * 100));
   const radius = 64;
@@ -109,23 +110,37 @@ export default function CircularTimer({
           Level {level} Progress (6 Questions)
         </div>
         <div className="flex items-center justify-center gap-1.5 w-full">
-          {[1, 2, 3, 4, 5, 6].map((qNum) => {
+          {[1, 2, 3, 4, 5, 6].map((qNum, i) => {
+            const resultStatus = (questionResults && questionResults[i]) ? questionResults[i] : null;
             const isCurrent = qNum === attemptNumber;
-            const isCompleted = qNum < attemptNumber;
+            const isCorrect = resultStatus === "correct";
+            const isWrong = resultStatus === "wrong";
+            const isCompletedFallback = !resultStatus && qNum < attemptNumber;
+
+            let badgeStyle = "bg-slate-100 dark:bg-black/40 border-slate-200 dark:border-gray-800 text-slate-400 dark:text-gray-600";
+            let label = `Q${qNum}`;
+
+            if (isCurrent) {
+              badgeStyle = "bg-cyan-100 dark:bg-cyan-950 border-cyan-500 text-cyan-800 dark:text-cyan-300 font-bold scale-105 ring-2 ring-cyan-500/30 shadow-md";
+              label = `[Q${qNum}]`;
+            } else if (isCorrect) {
+              badgeStyle = "bg-green-100 dark:bg-green-950/70 border-green-400 dark:border-green-600 text-green-800 dark:text-green-300 font-bold";
+              label = `✓ Q${qNum}`;
+            } else if (isWrong) {
+              badgeStyle = "bg-red-100 dark:bg-red-950/70 border-red-400 dark:border-red-600 text-red-800 dark:text-red-300 font-bold";
+              label = `✗ Q${qNum}`;
+            } else if (isCompletedFallback) {
+              badgeStyle = "bg-green-100 dark:bg-green-950/60 border-green-400 dark:border-green-600/80 text-green-800 dark:text-green-300 font-semibold";
+              label = `✓ Q${qNum}`;
+            }
 
             return (
               <div 
                 key={qNum}
-                className={`flex-1 flex flex-col items-center py-1.5 rounded-lg border text-center transition-all ${
-                  isCurrent
-                    ? "bg-cyan-100 dark:bg-cyan-950 border-cyan-500 text-cyan-800 dark:text-cyan-300 font-bold scale-105 ring-2 ring-cyan-500/30 shadow-md"
-                    : isCompleted
-                    ? "bg-green-100 dark:bg-green-950/60 border-green-400 dark:border-green-600/80 text-green-800 dark:text-green-300 font-semibold"
-                    : "bg-slate-100 dark:bg-black/40 border-slate-200 dark:border-gray-800 text-slate-400 dark:text-gray-600"
-                }`}
+                className={`flex-1 flex flex-col items-center py-1.5 rounded-lg border text-center transition-all ${badgeStyle}`}
               >
                 <span className="text-[10px] font-mono">
-                  {isCompleted ? `✓ Q${qNum}` : `Q${qNum}`}
+                  {label}
                 </span>
               </div>
             );

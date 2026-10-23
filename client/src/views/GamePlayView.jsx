@@ -25,6 +25,7 @@ export default function GamePlayView({
   const [showSaveBanner, setShowSaveBanner] = useState(false);
   const [feedbackToast, setFeedbackToast] = useState("");
   const [penaltyNotice, setPenaltyNotice] = useState(false);
+  const [localResults, setLocalResults] = useState({});
 
   const activeLevel = currentQuestion?.level || team?.current_level || 1;
   const timerRef = useRef(null);
@@ -41,6 +42,7 @@ export default function GamePlayView({
   useEffect(() => {
     if (activeLevel !== currentLevelRef.current) {
       currentLevelRef.current = activeLevel;
+      setLocalResults({});
       // Level advanced: give fresh 15-minute countdown
       setSecondsRemaining(15 * 60);
     } else if (!initializedRef.current && currentQuestion?.remaining_seconds !== undefined) {
@@ -83,8 +85,10 @@ export default function GamePlayView({
 
   const handleAnswerWrapper = async (answer) => {
     try {
+      const qNum = currentQuestion?.question_number || 1;
       const res = await onSubmitAnswer(answer);
       if (res?.correct) {
+        setLocalResults((prev) => ({ ...prev, [qNum]: "correct" }));
         sounds.playLevelCleared();
         setSaveSuccessMsg(res.message || "You saved the timeline by solving this question!");
         setShowSaveBanner(true);
@@ -95,6 +99,7 @@ export default function GamePlayView({
         }
       } else {
         // INCORRECT ANSWER: Deduct 2 minutes 30 seconds (150s) penalty immediately!
+        setLocalResults((prev) => ({ ...prev, [qNum]: "wrong" }));
         sounds.playGlitchBuzz();
         if (res?.next_question?.remaining_seconds !== undefined) {
           setSecondsRemaining(res.next_question.remaining_seconds);
@@ -110,6 +115,14 @@ export default function GamePlayView({
       console.error(err);
     }
   };
+
+  const mergedQuestionResults = [1, 2, 3, 4, 5, 6].map((qNum, i) => {
+    if (localResults[qNum]) return localResults[qNum];
+    if (currentQuestion?.question_results && currentQuestion.question_results[i]) {
+      return currentQuestion.question_results[i];
+    }
+    return null;
+  });
 
   return (
     <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-6 relative">
@@ -193,6 +206,7 @@ export default function GamePlayView({
               attemptNumber={currentQuestion?.question_number || 1}
               level={activeLevel}
               hasPenalty={penaltyNotice}
+              questionResults={mergedQuestionResults}
             />
           </div>
 

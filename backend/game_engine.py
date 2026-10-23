@@ -149,6 +149,7 @@ def get_current_question_view(db: Session, team: Team, settings: EventSettings) 
         return handle_timeout(db, team, settings)
 
     q_ids = json.loads(state.active_question_ids or "[]")
+    solved_ids = json.loads(state.solved_question_ids or "[]")
     idx = state.current_question_index
     if idx >= len(q_ids):
         return None
@@ -157,6 +158,19 @@ def get_current_question_view(db: Session, team: Team, settings: EventSettings) 
     q = db.query(Question).filter(Question.id == qid).first()
     if not q:
         return None
+
+    # Track correct / wrong status for completed questions in this level
+    question_results = []
+    for i, qid_item in enumerate(q_ids):
+        if i < idx:
+            if qid_item in solved_ids:
+                question_results.append("correct")
+            else:
+                question_results.append("wrong")
+        elif i == idx:
+            question_results.append("current")
+        else:
+            question_results.append("pending")
 
     options = []
     try:
@@ -182,7 +196,8 @@ def get_current_question_view(db: Session, team: Team, settings: EventSettings) 
         options=options,
         question_number=idx + 1,
         total_questions=len(q_ids),
-        remaining_seconds=remaining
+        remaining_seconds=remaining,
+        question_results=question_results
     )
 
 def submit_team_answer(db: Session, team: Team, answer_text: str, settings: EventSettings) -> Dict[str, Any]:
