@@ -19,19 +19,13 @@ class LoopSocketClient {
     }
 
     let wsUrl;
-    const isLocalhost = typeof window !== "undefined" && 
-      (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
-
-    let customWs = import.meta.env.VITE_WS_URL;
-    let customApi = import.meta.env.VITE_API_URL;
-    if (!customWs && !customApi && !isLocalhost) {
-      customApi = "https://time-loop.onrender.com";
-    }
+    const customWs = import.meta.env.VITE_WS_URL;
+    const customApi = import.meta.env.VITE_API_URL;
 
     if (customWs) {
       wsUrl = `${customWs.replace(/\/+$/, "")}/ws?role=${encodeURIComponent(role)}&identifier=${encodeURIComponent(identifier)}`;
     } else if (customApi) {
-      const base = customApi.replace(/\/api\/?$/, "").replace(/^http:/, "ws:").replace(/^https:/, "wss:");
+      const base = customApi.replace(/\/api\/?$/, "").replace(/^http:/i, "ws:").replace(/^https:/i, "wss:");
       wsUrl = `${base.replace(/\/+$/, "")}/ws?role=${encodeURIComponent(role)}&identifier=${encodeURIComponent(identifier)}`;
     } else {
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";

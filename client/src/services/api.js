@@ -1,8 +1,5 @@
 // Centralized API Client for LOOP Platform
-const isLocalhost = typeof window !== "undefined" && 
-  (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
-
-let rawApiBase = (import.meta.env.VITE_API_URL || (isLocalhost ? "" : "https://time-loop.onrender.com")).trim().replace(/\/+$/, "");
+let rawApiBase = (import.meta.env.VITE_API_URL || "").trim().replace(/\/+$/, "");
 if (rawApiBase.endsWith("/api")) {
   rawApiBase = rawApiBase.substring(0, rawApiBase.length - 4);
 }
