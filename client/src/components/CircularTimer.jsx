@@ -98,7 +98,7 @@ export default function CircularTimer({
 
           <span className="text-[9px] uppercase tracking-widest text-slate-500 dark:text-gray-400 font-mono mt-1 flex items-center gap-1">
             <Clock className={`w-3 h-3 ${hasPenalty ? "text-red-400" : "text-cyan-500"}`} />
-            <span>{hasPenalty ? "-2m 05s PENALTY" : "15 MIN LEVEL CLOCK"}</span>
+            <span>{hasPenalty ? "-2m 30s PENALTY" : "15 MIN LEVEL CLOCK"}</span>
           </span>
         </div>
       </div>

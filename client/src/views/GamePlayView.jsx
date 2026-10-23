@@ -94,16 +94,16 @@ export default function GamePlayView({
           setSecondsRemaining(15 * 60);
         }
       } else {
-        // INCORRECT ANSWER: Deduct 2 minutes 5 seconds (125s) penalty immediately!
+        // INCORRECT ANSWER: Deduct 2 minutes 30 seconds (150s) penalty immediately!
         sounds.playGlitchBuzz();
         if (res?.next_question?.remaining_seconds !== undefined) {
           setSecondsRemaining(res.next_question.remaining_seconds);
         } else {
-          setSecondsRemaining((prev) => Math.max(0, prev - 125));
+          setSecondsRemaining((prev) => Math.max(0, prev - 150));
         }
         setPenaltyNotice(true);
         setTimeout(() => setPenaltyNotice(false), 2500);
-        setFeedbackToast(res?.message || "Incorrect answer: -2 min 05 sec deducted from timeline. Question replaced.");
+        setFeedbackToast(res?.message || "Incorrect answer: -2 min 30 sec deducted from timeline. Question replaced.");
         setTimeout(() => setFeedbackToast(""), 3500);
       }
     } catch (err) {
@@ -184,7 +184,7 @@ export default function GamePlayView({
             {penaltyNotice && (
               <div className="absolute -top-3 z-30 px-3.5 py-1 rounded-full bg-red-600 border border-red-400 text-white font-mono text-xs font-black uppercase tracking-wider animate-bounce shadow-xl shadow-red-600/60 flex items-center gap-1.5">
                 <AlertTriangle className="w-3.5 h-3.5 text-yellow-300" />
-                <span>-2m 05s PENALTY</span>
+                <span>-2m 30s PENALTY</span>
               </div>
             )}
             <CircularTimer
