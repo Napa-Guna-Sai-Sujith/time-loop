@@ -14,32 +14,42 @@ export default function GamePlayView({
   onTimeout,
   isSubmitting = false
 }) {
-  const [secondsRemaining, setSecondsRemaining] = useState(15 * 60);
+  const [secondsRemaining, setSecondsRemaining] = useState(() => {
+    return currentQuestion?.remaining_seconds !== undefined
+      ? currentQuestion.remaining_seconds
+      : 15 * 60;
+  });
   const [maxSeconds, setMaxSeconds] = useState(15 * 60);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState("");
   const [showSaveBanner, setShowSaveBanner] = useState(false);
   const [feedbackToast, setFeedbackToast] = useState("");
+  const [penaltyNotice, setPenaltyNotice] = useState(false);
 
   const timerRef = useRef(null);
+  const currentLevelRef = useRef(team?.current_level || 1);
+  const initializedRef = useRef(false);
 
-  // Sync remaining seconds with backend state
+  // Initialize once on mount or when level changes
   useEffect(() => {
-    if (!currentQuestion) return;
+    if (team?.current_level && team.current_level !== currentLevelRef.current) {
+      currentLevelRef.current = team.current_level;
+      // Level advanced: give fresh 15-minute countdown
+      setSecondsRemaining(15 * 60);
+    } else if (!initializedRef.current && currentQuestion?.remaining_seconds !== undefined) {
+      initializedRef.current = true;
+      setSecondsRemaining(currentQuestion.remaining_seconds);
+    }
+  }, [team?.current_level, currentQuestion?.remaining_seconds]);
 
-    const remaining = currentQuestion.remaining_seconds !== undefined
-      ? currentQuestion.remaining_seconds
-      : 15 * 60;
-
-    setSecondsRemaining(remaining);
-    setMaxSeconds(15 * 60);
-
+  // CONTINUOUS TIMER COUNTDOWN: Continues smoothly across all questions without restarting!
+  useEffect(() => {
     if (timerRef.current) clearInterval(timerRef.current);
 
     timerRef.current = setInterval(() => {
       setSecondsRemaining((prev) => {
-        const next = prev - 1;
+        const next = Math.max(0, prev - 1);
         if (next >= 1 && next <= 10) {
-          sounds.playTick(next, 10);
+          sounds.playTick(Math.round(next), 10);
         }
         if (next <= 0) {
           clearInterval(timerRef.current);
@@ -54,7 +64,7 @@ export default function GamePlayView({
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [currentQuestion?.id, currentQuestion?.question_number]);
+  }, [onTimeout]);
 
   const handleAnswerWrapper = async (answer) => {
     try {
@@ -63,9 +73,18 @@ export default function GamePlayView({
         sounds.playLevelCleared();
         setSaveSuccessMsg(res.message || "You saved the timeline by solving this question!");
         setShowSaveBanner(true);
+
+        if (res?.status === "LEVEL_CLEARED") {
+          // Fresh 15-min countdown for the next level
+          setSecondsRemaining(15 * 60);
+        }
       } else {
+        // INCORRECT ANSWER: Deduct 2.5s penalty immediately and continue continuous countdown!
         sounds.playGlitchBuzz();
-        setFeedbackToast(res?.message || "Anomaly detected. Question replaced.");
+        setSecondsRemaining((prev) => Math.max(0, prev - 2.5));
+        setPenaltyNotice(true);
+        setTimeout(() => setPenaltyNotice(false), 2000);
+        setFeedbackToast(res?.message || "Incorrect! -2.5s deducted from timeline. Question replaced.");
         setTimeout(() => setFeedbackToast(""), 3000);
       }
     } catch (err) {
@@ -142,12 +161,20 @@ export default function GamePlayView({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-start">
         {/* Left Side: Circular Timer & Glowing Tokens */}
         <div className="lg:col-span-4 glass-panel rounded-3xl p-5 sm:p-6 flex flex-col items-center justify-center gap-6 border border-cyan-500/30">
-          <CircularTimer
-            secondsRemaining={secondsRemaining}
-            maxSeconds={maxSeconds}
-            attemptNumber={currentQuestion?.question_number || 1}
-            level={team?.current_level || 1}
-          />
+          <div className="relative flex flex-col items-center">
+            {penaltyNotice && (
+              <div className="absolute -top-3 z-30 px-3.5 py-1 rounded-full bg-red-600 border border-red-400 text-white font-mono text-xs font-black uppercase tracking-wider animate-bounce shadow-xl shadow-red-600/60 flex items-center gap-1">
+                <AlertTriangle className="w-3.5 h-3.5 text-yellow-300" />
+                <span>-2.5s PENALTY</span>
+              </div>
+            )}
+            <CircularTimer
+              secondsRemaining={secondsRemaining}
+              maxSeconds={maxSeconds}
+              attemptNumber={currentQuestion?.question_number || 1}
+              level={team?.current_level || 1}
+            />
+          </div>
 
           <div className="w-full pt-4 border-t border-slate-200 dark:border-temporal-border flex justify-center">
             <GlowingTokens

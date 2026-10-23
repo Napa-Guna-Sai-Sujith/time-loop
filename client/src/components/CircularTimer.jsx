@@ -12,9 +12,10 @@ export default function CircularTimer({
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
-  // Format 15-minute countdown as MM:SS
-  const minutes = Math.floor(secondsRemaining / 60);
-  const seconds = secondsRemaining % 60;
+  // Format 15-minute countdown as MM:SS (cleanly rounding fractional penalty seconds)
+  const totalSecondsFloor = Math.floor(secondsRemaining);
+  const minutes = Math.floor(totalSecondsFloor / 60);
+  const seconds = totalSecondsFloor % 60;
   const formattedTime = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 
   // Urgency color logic (e.g. last 2 minutes critical, last 5 minutes warning)

@@ -269,7 +269,12 @@ def submit_team_answer(db: Session, team: Team, answer_text: str, settings: Even
                 "total_score": team.total_score
             }
     else:
-        # INCORRECT: No token deducted. Replace question with another from same category & difficulty.
+        # INCORRECT: Deduct 2.5 seconds penalty from the continuous level countdown timer.
+        if state.expires_at:
+            state.expires_at = state.expires_at - datetime.timedelta(seconds=2.5)
+            db.commit()
+
+        # Replace question with another from same category & difficulty.
         replacement = find_replacement_question(db, question, exclude_ids=q_ids)
         if replacement:
             q_ids[idx] = replacement.id
@@ -282,13 +287,14 @@ def submit_team_answer(db: Session, team: Team, answer_text: str, settings: Even
         next_q = get_current_question_view(db, team, settings)
         return {
             "correct": False,
-            "message": "Question replaced with another anomaly from the timeline.",
+            "message": "Incorrect answer: -2.5s penalty deducted from timeline. Question replaced.",
             "status": "QUESTION_REPLACED",
             "explanation": explanation,
             "next_question": next_q,
             "tokens_remaining": team.tokens_remaining,
             "current_level": team.current_level,
-            "total_score": team.total_score
+            "total_score": team.total_score,
+            "time_penalty_applied": 2.5
         }
 
 def find_replacement_question(db: Session, original_q: Question, exclude_ids: List[int]) -> Optional[Question]:
