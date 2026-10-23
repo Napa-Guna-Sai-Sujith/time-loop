@@ -8,7 +8,7 @@
     "server": "node server/server.js",
     "client": "npm --prefix client run dev",
     "build": "node build.js",
-    "start": "node server/server.js"
+    "start": "python3 -m uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000} || uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000} || node server/server.js"
   },
   "dependencies": {
     "concurrently": "^9.1.2",

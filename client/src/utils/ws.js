@@ -19,8 +19,15 @@ class LoopSocketClient {
     }
 
     let wsUrl;
-    const customWs = import.meta.env.VITE_WS_URL;
-    const customApi = import.meta.env.VITE_API_URL;
+    const isLocalhost = typeof window !== "undefined" && 
+      (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+
+    let customWs = import.meta.env.VITE_WS_URL;
+    let customApi = import.meta.env.VITE_API_URL;
+    if (!customWs && !customApi && !isLocalhost) {
+      customApi = "https://time-loop.onrender.com";
+    }
+
     if (customWs) {
       wsUrl = `${customWs.replace(/\/+$/, "")}/ws?role=${encodeURIComponent(role)}&identifier=${encodeURIComponent(identifier)}`;
     } else if (customApi) {
