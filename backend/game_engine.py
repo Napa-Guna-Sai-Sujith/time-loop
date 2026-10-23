@@ -277,9 +277,9 @@ def submit_team_answer(db: Session, team: Team, answer_text: str, settings: Even
                 "total_score": team.total_score
             }
     else:
-        # INCORRECT: Deduct 2.5 seconds penalty from the continuous level countdown timer.
+        # INCORRECT: Deduct 2 minutes 5 seconds (125 seconds) penalty from the continuous level countdown timer.
         if state.expires_at:
-            state.expires_at = state.expires_at - datetime.timedelta(seconds=2.5)
+            state.expires_at = state.expires_at - datetime.timedelta(seconds=125)
             db.commit()
 
         # Replace question with another from same category & difficulty.
@@ -295,14 +295,14 @@ def submit_team_answer(db: Session, team: Team, answer_text: str, settings: Even
         next_q = get_current_question_view(db, team, settings)
         return {
             "correct": False,
-            "message": "Incorrect answer: 2.5 seconds deducted from timeline. Question replaced.",
+            "message": "Incorrect answer: -2 min 05 sec penalty deducted from timeline. Question replaced.",
             "status": "QUESTION_REPLACED",
             "explanation": explanation,
             "next_question": next_q,
             "tokens_remaining": team.tokens_remaining,
             "current_level": team.current_level,
             "total_score": team.total_score,
-            "time_penalty_applied": 2.5
+            "time_penalty_applied": 125
         }
 
 def find_replacement_question(db: Session, original_q: Question, exclude_ids: List[int]) -> Optional[Question]:
