@@ -134,6 +134,9 @@ class AnswerSubmitResponse(BaseModel):
     current_level: int
     total_score: float
     team: Optional[Dict[str, Any]] = None
+    remaining_seconds: Optional[int] = None
+    question_number: Optional[int] = None
+    total_questions: Optional[int] = None
 
 class TimeoutRequest(BaseModel):
     pass

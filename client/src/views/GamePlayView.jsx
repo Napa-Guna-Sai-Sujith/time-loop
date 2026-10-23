@@ -80,13 +80,17 @@ export default function GamePlayView({
           setSecondsRemaining(15 * 60);
         }
       } else {
-        // INCORRECT ANSWER: Deduct 2.5s penalty immediately and continue continuous countdown!
+        // INCORRECT ANSWER: Deduct 2.5 seconds penalty immediately and continue continuous countdown!
         sounds.playGlitchBuzz();
-        setSecondsRemaining((prev) => Math.max(0, prev - 2.5));
+        if (res?.next_question?.remaining_seconds !== undefined) {
+          setSecondsRemaining(res.next_question.remaining_seconds);
+        } else {
+          setSecondsRemaining((prev) => Math.max(0, prev - 2.5));
+        }
         setPenaltyNotice(true);
-        setTimeout(() => setPenaltyNotice(false), 2000);
-        setFeedbackToast(res?.message || "Incorrect! -2.5s deducted from timeline. Question replaced.");
-        setTimeout(() => setFeedbackToast(""), 3000);
+        setTimeout(() => setPenaltyNotice(false), 2500);
+        setFeedbackToast(res?.message || "Incorrect answer: 2.5 seconds deducted from timeline. Question replaced.");
+        setTimeout(() => setFeedbackToast(""), 3500);
       }
     } catch (err) {
       console.error(err);
@@ -164,9 +168,9 @@ export default function GamePlayView({
         <div className="lg:col-span-4 glass-panel rounded-3xl p-5 sm:p-6 flex flex-col items-center justify-center gap-6 border border-cyan-500/30">
           <div className="relative flex flex-col items-center">
             {penaltyNotice && (
-              <div className="absolute -top-3 z-30 px-3.5 py-1 rounded-full bg-red-600 border border-red-400 text-white font-mono text-xs font-black uppercase tracking-wider animate-bounce shadow-xl shadow-red-600/60 flex items-center gap-1">
+              <div className="absolute -top-3 z-30 px-3.5 py-1 rounded-full bg-red-600 border border-red-400 text-white font-mono text-xs font-black uppercase tracking-wider animate-bounce shadow-xl shadow-red-600/60 flex items-center gap-1.5">
                 <AlertTriangle className="w-3.5 h-3.5 text-yellow-300" />
-                <span>-2.5s PENALTY</span>
+                <span>-2.5 SECONDS PENALTY</span>
               </div>
             )}
             <CircularTimer
@@ -174,6 +178,7 @@ export default function GamePlayView({
               maxSeconds={maxSeconds}
               attemptNumber={currentQuestion?.question_number || 1}
               level={activeLevel}
+              hasPenalty={penaltyNotice}
             />
           </div>
 

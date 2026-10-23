@@ -110,16 +110,21 @@ async def submit_answer(
         "is_qualified": team.is_qualified
     }
 
+    next_q = result.get("next_question")
+
     return AnswerSubmitResponse(
         correct=result["correct"],
         message=result["message"],
         status=result["status"],
         explanation=result.get("explanation"),
-        next_question=result.get("next_question"),
+        next_question=next_q,
         tokens_remaining=result["tokens_remaining"],
         current_level=result["current_level"],
         total_score=result["total_score"],
-        team=team_dict
+        team=team_dict,
+        remaining_seconds=next_q.remaining_seconds if next_q else None,
+        question_number=next_q.question_number if next_q else None,
+        total_questions=next_q.total_questions if next_q else None
     )
 
 @router.post("/timeout")

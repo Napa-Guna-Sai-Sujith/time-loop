@@ -216,10 +216,7 @@ export default function App() {
       if (res.next_question) {
         setCurrentQuestion({
           ...res.next_question,
-          remaining_seconds: res.remaining_seconds,
-          tokens: res.tokens,
-          question_number: res.question_number,
-          total_questions: res.total_questions
+          tokens: res.tokens_remaining ?? res.team?.tokens_remaining ?? res.next_question.tokens
         });
       } else if (res.status === "ESCAPED" || res.status === "ELIMINATED") {
         setCurrentQuestion(null);
@@ -250,10 +247,7 @@ export default function App() {
       if (res.next_question) {
         setCurrentQuestion({
           ...res.next_question,
-          remaining_seconds: res.remaining_seconds,
-          tokens: res.tokens,
-          question_number: res.question_number,
-          total_questions: res.total_questions
+          tokens: res.tokens_remaining ?? res.team?.tokens_remaining ?? res.next_question.tokens
         });
       } else if (res.status === "ELIMINATED") {
         setCurrentQuestion(null);

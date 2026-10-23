@@ -5,7 +5,8 @@ export default function CircularTimer({
   secondsRemaining = 900, 
   maxSeconds = 900, 
   attemptNumber = 1,
-  level = 1 
+  level = 1,
+  hasPenalty = false
 }) {
   const percentage = Math.max(0, Math.min(100, (secondsRemaining / maxSeconds) * 100));
   const radius = 64;
@@ -22,13 +23,17 @@ export default function CircularTimer({
   const isCritical = secondsRemaining <= 120; // < 2 mins
   const isWarning = secondsRemaining <= 300 && !isCritical; // < 5 mins
   
-  const strokeColor = isCritical 
+  const strokeColor = hasPenalty
+    ? "#ef4444"
+    : isCritical 
     ? "#ff2a5f" 
     : isWarning 
     ? "#ffb703" 
     : "#00f0ff";
 
-  const glowShadow = isCritical
+  const glowShadow = hasPenalty
+    ? "drop-shadow(0 0 18px rgba(239, 68, 68, 0.9))"
+    : isCritical
     ? "drop-shadow(0 0 16px rgba(255, 42, 95, 0.8))"
     : isWarning
     ? "drop-shadow(0 0 12px rgba(255, 183, 3, 0.6))"
@@ -79,7 +84,9 @@ export default function CircularTimer({
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
           <span 
             className={`font-mono font-black text-3xl sm:text-4xl tracking-tight transition-all ${
-              isCritical
+              hasPenalty
+                ? "text-red-500 scale-105 animate-pulse"
+                : isCritical
                 ? "text-red-500 animate-bounce"
                 : isWarning
                 ? "text-amber-500 dark:text-amber-400"
@@ -90,8 +97,8 @@ export default function CircularTimer({
           </span>
 
           <span className="text-[9px] uppercase tracking-widest text-slate-500 dark:text-gray-400 font-mono mt-1 flex items-center gap-1">
-            <Clock className="w-3 h-3 text-cyan-500" />
-            <span>15 MIN LEVEL CLOCK</span>
+            <Clock className={`w-3 h-3 ${hasPenalty ? "text-red-400" : "text-cyan-500"}`} />
+            <span>{hasPenalty ? "-2.5 SEC PENALTY" : "15 MIN LEVEL CLOCK"}</span>
           </span>
         </div>
       </div>

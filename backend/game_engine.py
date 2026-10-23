@@ -130,6 +130,8 @@ def select_questions_for_attempt(db: Session, level: int, settings: EventSetting
         while len(selected_ids) < settings.questions_per_attempt and all_ids:
             selected_ids.append(random.choice(all_ids))
 
+    # Jumble selected questions using random shuffle so every team receives a randomized sequence!
+    random.shuffle(selected_ids)
     return selected_ids[:settings.questions_per_attempt]
 
 def get_current_question_view(db: Session, team: Team, settings: EventSettings) -> Optional[QuestionPlayerView]:
@@ -158,7 +160,13 @@ def get_current_question_view(db: Session, team: Team, settings: EventSettings) 
 
     options = []
     try:
-        options = json.loads(q.options)
+        raw_opts = json.loads(q.options)
+        if isinstance(raw_opts, list):
+            options = list(raw_opts)
+            # Deterministically jumble options for this specific team, question, and attempt
+            # so team members or adjacent teams cannot look at each other's ABCD buttons
+            rng = random.Random(f"opt_salt_{team.id}_{q.id}_{state.attempt_number}")
+            rng.shuffle(options)
     except Exception:
         options = []
 
@@ -287,7 +295,7 @@ def submit_team_answer(db: Session, team: Team, answer_text: str, settings: Even
         next_q = get_current_question_view(db, team, settings)
         return {
             "correct": False,
-            "message": "Incorrect answer: -2.5s penalty deducted from timeline. Question replaced.",
+            "message": "Incorrect answer: 2.5 seconds deducted from timeline. Question replaced.",
             "status": "QUESTION_REPLACED",
             "explanation": explanation,
             "next_question": next_q,
@@ -300,7 +308,7 @@ def submit_team_answer(db: Session, team: Team, answer_text: str, settings: Even
 def find_replacement_question(db: Session, original_q: Question, exclude_ids: List[int]) -> Optional[Question]:
     """Finds a replacement question testing the same category and similar difficulty."""
     # First priority: same category, same difficulty, active, not in exclude_ids
-    candidate = (
+    candidates = (
         db.query(Question)
         .filter(
             Question.level == original_q.level,
@@ -309,13 +317,13 @@ def find_replacement_question(db: Session, original_q: Question, exclude_ids: Li
             Question.is_active == True,
             ~Question.id.in_(exclude_ids)
         )
-        .first()
+        .all()
     )
-    if candidate:
-        return candidate
+    if candidates:
+        return random.choice(candidates)
 
     # Second priority: same category, any difficulty in this level
-    candidate = (
+    candidates = (
         db.query(Question)
         .filter(
             Question.level == original_q.level,
@@ -323,22 +331,24 @@ def find_replacement_question(db: Session, original_q: Question, exclude_ids: Li
             Question.is_active == True,
             ~Question.id.in_(exclude_ids)
         )
-        .first()
+        .all()
     )
-    if candidate:
-        return candidate
+    if candidates:
+        return random.choice(candidates)
 
     # Third priority: any active question in this level not currently active
-    candidate = (
+    candidates = (
         db.query(Question)
         .filter(
             Question.level == original_q.level,
             Question.is_active == True,
             ~Question.id.in_(exclude_ids)
         )
-        .first()
+        .all()
     )
-    return candidate or original_q
+    if candidates:
+        return random.choice(candidates)
+    return original_q
 
 def handle_timeout(db: Session, team: Team, settings: EventSettings, return_dict: bool = False) -> Any:
     """Handles 15-minute timer expiration: deducts 1 token, gives fresh set of 6 questions if tokens remain, or eliminates."""
