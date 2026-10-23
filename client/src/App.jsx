@@ -197,7 +197,7 @@ export default function App() {
   };
 
   // Gameplay Handlers
-  const handleSubmitAnswer = async (answer) => {
+  const handleSubmitAnswer = useCallback(async (answer) => {
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
@@ -228,9 +228,9 @@ export default function App() {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [isSubmitting]);
 
-  const handleTimeout = async () => {
+  const handleTimeout = useCallback(async () => {
     try {
       const res = await api.triggerTimeout();
       if (res.team) {
@@ -255,7 +255,7 @@ export default function App() {
     } catch (err) {
       console.error("Timeout trigger error:", err);
     }
-  };
+  }, []);
 
   // View Resolution for Participants
   const renderParticipantView = () => {
@@ -285,6 +285,49 @@ export default function App() {
       return <WaitingRoomView team={team} onLogout={handleTeamLogout} />;
     }
 
+    // PAUSED STATE: Organizers paused tournament -> Hide questions & freeze time
+    if (eventStatus === "PAUSED") {
+      return (
+        <div className="min-h-[calc(100vh-80px)] flex flex-col items-center justify-center p-4">
+          <div className="max-w-md w-full glass-panel rounded-3xl p-8 border-2 border-amber-500/50 text-center shadow-2xl relative overflow-hidden backdrop-blur-xl">
+            <div className="w-20 h-20 rounded-3xl bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-amber-500/30">
+              <span className="text-3xl animate-pulse">⏸️</span>
+            </div>
+
+            <span className="px-3.5 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-widest bg-amber-500/20 text-amber-400 border border-amber-500/40 inline-block mb-3">
+              TIMELINE FROZEN
+            </span>
+
+            <h2 className="text-2xl font-mono font-black text-slate-900 dark:text-white mb-2">
+              GAME PAUSED BY ORGANIZER
+            </h2>
+
+            <p className="text-xs sm:text-sm font-mono text-slate-600 dark:text-gray-300 mb-6 leading-relaxed">
+              The organizer has temporarily paused the tournament. All questions are hidden and the countdown timer is paused.
+            </p>
+
+            <div className="p-4 rounded-2xl bg-black/40 border border-amber-500/30 text-left font-mono text-xs text-gray-300 space-y-2">
+              <div className="flex justify-between items-center py-1 border-b border-gray-800">
+                <span className="text-gray-400">TEAM:</span>
+                <strong className="text-cyan-400">{team?.team_name}</strong>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-gray-800">
+                <span className="text-gray-400">CURRENT LEVEL:</span>
+                <strong className="text-purple-400">Level {team?.current_level || 1}</strong>
+              </div>
+              <div className="flex justify-between items-center py-1">
+                <span className="text-gray-400">STATUS:</span>
+                <span className="text-amber-400 font-bold flex items-center gap-1.5 animate-pulse">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
+                  STAND BY FOR RESUME SIGNAL
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     if (team.status === "WAITING") {
       if (eventStatus === "RUNNING") {
         refreshPlayerState();
@@ -311,6 +354,7 @@ export default function App() {
           onSubmitAnswer={handleSubmitAnswer}
           onTimeout={handleTimeout}
           isSubmitting={isSubmitting}
+          isPaused={eventStatus === "PAUSED"}
         />
       );
     }

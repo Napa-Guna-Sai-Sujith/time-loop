@@ -12,7 +12,8 @@ export default function GamePlayView({
   currentQuestion,
   onSubmitAnswer,
   onTimeout,
-  isSubmitting = false
+  isSubmitting = false,
+  isPaused = false
 }) {
   const [secondsRemaining, setSecondsRemaining] = useState(() => {
     return currentQuestion?.remaining_seconds !== undefined
@@ -29,6 +30,12 @@ export default function GamePlayView({
   const timerRef = useRef(null);
   const currentLevelRef = useRef(activeLevel);
   const initializedRef = useRef(false);
+  const onTimeoutRef = useRef(onTimeout);
+  const lastTickRef = useRef(Date.now());
+
+  useEffect(() => {
+    onTimeoutRef.current = onTimeout;
+  }, [onTimeout]);
 
   // Initialize once on mount or when level changes
   useEffect(() => {
@@ -42,30 +49,37 @@ export default function GamePlayView({
     }
   }, [activeLevel, currentQuestion?.remaining_seconds]);
 
-  // CONTINUOUS TIMER COUNTDOWN: Continues smoothly across all questions without restarting!
+  // CONTINUOUS TIMER COUNTDOWN: High precision delta countdown that never stalls, drifts, or restarts
   useEffect(() => {
     if (timerRef.current) clearInterval(timerRef.current);
+    if (isPaused) return;
+
+    lastTickRef.current = Date.now();
 
     timerRef.current = setInterval(() => {
+      const now = Date.now();
+      const deltaSec = (now - lastTickRef.current) / 1000;
+      lastTickRef.current = now;
+
       setSecondsRemaining((prev) => {
-        const next = Math.max(0, prev - 1);
-        if (next >= 1 && next <= 10) {
+        const next = Math.max(0, prev - deltaSec);
+        if (next >= 1 && next <= 10 && Math.floor(prev) !== Math.floor(next)) {
           sounds.playTick(Math.round(next), 10);
         }
         if (next <= 0) {
           clearInterval(timerRef.current);
           sounds.playGlitchBuzz();
-          onTimeout();
+          if (onTimeoutRef.current) onTimeoutRef.current();
           return 0;
         }
         return next;
       });
-    }, 1000);
+    }, 500);
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [onTimeout]);
+  }, [isPaused]);
 
   const handleAnswerWrapper = async (answer) => {
     try {

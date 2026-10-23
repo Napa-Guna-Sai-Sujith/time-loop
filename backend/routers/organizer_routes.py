@@ -206,6 +206,17 @@ async def resume_game(
     if not settings or settings.status != "PAUSED":
         raise HTTPException(status_code=400, detail="Game is not paused.")
 
+    # Extend time limit by pause duration so teams don't lose time during pause
+    if settings.paused_at:
+        pause_duration = datetime.datetime.utcnow() - settings.paused_at
+        active_states = db.query(TeamLevelState).filter(
+            TeamLevelState.is_completed == False,
+            TeamLevelState.is_failed == False,
+            TeamLevelState.expires_at != None
+        ).all()
+        for s in active_states:
+            s.expires_at = s.expires_at + pause_duration
+
     settings.status = "RUNNING"
     settings.paused_at = None
 
