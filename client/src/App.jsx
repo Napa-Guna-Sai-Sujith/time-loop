@@ -118,7 +118,8 @@ export default function App() {
           remaining_seconds: q.remaining_seconds !== undefined ? q.remaining_seconds : state.remaining_seconds,
           tokens: q.tokens !== undefined ? q.tokens : state.tokens,
           question_number: q.question_number !== undefined ? q.question_number : state.question_number,
-          total_questions: q.total_questions !== undefined ? q.total_questions : state.total_questions
+          total_questions: q.total_questions !== undefined ? q.total_questions : state.total_questions,
+          question_results: q.question_results !== undefined ? q.question_results : state.question_results
         });
       }
     } catch {
@@ -232,7 +233,8 @@ export default function App() {
       if (res.next_question) {
         setCurrentQuestion({
           ...res.next_question,
-          tokens: res.tokens_remaining ?? res.team?.tokens_remaining ?? res.next_question.tokens
+          tokens: res.tokens_remaining ?? res.team?.tokens_remaining ?? res.next_question.tokens,
+          question_results: res.next_question.question_results ?? res.question_results
         });
       } else if (res.status === "ESCAPED" || res.status === "ELIMINATED") {
         setCurrentQuestion(null);

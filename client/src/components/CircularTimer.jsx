@@ -114,24 +114,20 @@ export default function CircularTimer({
             const resultStatus = (questionResults && questionResults[i]) ? questionResults[i] : null;
             const isCurrent = qNum === attemptNumber;
             const isCorrect = resultStatus === "correct";
-            const isWrong = resultStatus === "wrong";
-            const isCompletedFallback = !resultStatus && qNum < attemptNumber;
+            const isWrong = resultStatus === "wrong" || (!isCurrent && qNum < attemptNumber && !isCorrect);
 
             let badgeStyle = "bg-slate-100 dark:bg-black/40 border-slate-200 dark:border-gray-800 text-slate-400 dark:text-gray-600";
             let label = `Q${qNum}`;
 
             if (isCurrent) {
-              badgeStyle = "bg-cyan-100 dark:bg-cyan-950 border-cyan-500 text-cyan-800 dark:text-cyan-300 font-bold scale-105 ring-2 ring-cyan-500/30 shadow-md";
+              badgeStyle = "bg-cyan-100 dark:bg-cyan-950/80 border-cyan-400 text-cyan-800 dark:text-cyan-300 font-black scale-105 ring-2 ring-cyan-500/40 shadow-md shadow-cyan-500/20";
               label = `[Q${qNum}]`;
             } else if (isCorrect) {
-              badgeStyle = "bg-green-100 dark:bg-green-950/70 border-green-400 dark:border-green-600 text-green-800 dark:text-green-300 font-bold";
+              badgeStyle = "bg-green-100 dark:bg-green-950/80 border-green-500 text-green-800 dark:text-green-300 font-black shadow-sm shadow-green-500/20";
               label = `✓ Q${qNum}`;
             } else if (isWrong) {
-              badgeStyle = "bg-red-100 dark:bg-red-950/70 border-red-400 dark:border-red-600 text-red-800 dark:text-red-300 font-bold";
+              badgeStyle = "bg-red-100 dark:bg-red-950/80 border-red-500 text-red-800 dark:text-red-300 font-black shadow-sm shadow-red-500/20";
               label = `✗ Q${qNum}`;
-            } else if (isCompletedFallback) {
-              badgeStyle = "bg-green-100 dark:bg-green-950/60 border-green-400 dark:border-green-600/80 text-green-800 dark:text-green-300 font-semibold";
-              label = `✓ Q${qNum}`;
             }
 
             return (

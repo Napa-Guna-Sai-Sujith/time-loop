@@ -138,6 +138,7 @@ class AnswerSubmitResponse(BaseModel):
     remaining_seconds: Optional[int] = None
     question_number: Optional[int] = None
     total_questions: Optional[int] = None
+    question_results: Optional[List[str]] = None
 
 class TimeoutRequest(BaseModel):
     pass
