@@ -44,6 +44,11 @@ export const api = {
     return handleResponse(res);
   },
 
+  async getNextTeamId() {
+    const res = await fetch(`${API_BASE}/auth/team/next-id`);
+    return handleResponse(res);
+  },
+
   async teamRegister(data) {
     const res = await fetch(`${API_BASE}/auth/team/register`, {
       method: "POST",

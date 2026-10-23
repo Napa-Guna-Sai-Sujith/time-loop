@@ -18,7 +18,7 @@ class OrganizerPasswordChange(BaseModel):
 
 class TeamRegisterRequest(BaseModel):
     team_name: str
-    team_id: str
+    team_id: Optional[str] = None
     password: str
     avatar: Optional[str] = "⚡"
     department: Optional[str] = "Computer Science & Engg"

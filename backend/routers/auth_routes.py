@@ -74,21 +74,47 @@ def organizer_change_password(
 
 # --- Team / Player Auth ---
 
+@router.get("/team/next-id")
+def get_next_team_id(db: Session = Depends(get_db)):
+    """Generates the next sequential unique Team ID (e.g. TEAM-01, TEAM-02)."""
+    existing_teams = db.query(Team.team_id).all()
+    existing_ids = {t[0].upper() for t in existing_teams}
+    num = 1
+    while True:
+        candidate = f"TEAM-{num:02d}"
+        if candidate not in existing_ids:
+            return {"next_team_id": candidate}
+        num += 1
+
 @router.post("/team/register", response_model=TeamResponse)
 def team_register(payload: TeamRegisterRequest, response: Response, db: Session = Depends(get_db)):
     settings = db.query(EventSettings).first()
     if settings and not settings.registration_open:
         raise HTTPException(status_code=400, detail="Registration is currently closed by the event organizer.")
 
-    clean_id = payload.team_id.strip().upper()
     clean_name = payload.team_name.strip()
+    if not clean_name or not payload.password:
+        raise HTTPException(status_code=400, detail="Team name and password are required.")
 
-    if not clean_id or not clean_name or not payload.password:
-        raise HTTPException(status_code=400, detail="Team name, ID, and password are required.")
+    existing_teams = db.query(Team).all()
+    existing_ids = {t.team_id.upper() for t in existing_teams}
+    existing_names = {t.team_name.lower() for t in existing_teams}
 
-    # Check duplicates
-    if db.query(Team).filter((Team.team_id == clean_id) | (Team.team_name == clean_name)).first():
-        raise HTTPException(status_code=400, detail="A team with this Name or Team ID already exists.")
+    if clean_name.lower() in existing_names:
+        raise HTTPException(status_code=400, detail="A team with this Name already exists.")
+
+    if payload.team_id and payload.team_id.strip():
+        clean_id = payload.team_id.strip().upper()
+        if clean_id in existing_ids:
+            num = 1
+            while f"TEAM-{num:02d}" in existing_ids:
+                num += 1
+            clean_id = f"TEAM-{num:02d}"
+    else:
+        num = 1
+        while f"TEAM-{num:02d}" in existing_ids:
+            num += 1
+        clean_id = f"TEAM-{num:02d}"
 
     new_team = Team(
         team_id=clean_id,

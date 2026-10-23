@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Clock, ShieldCheck, ArrowRight, UserPlus, LogIn, Users } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Clock, ShieldCheck, ArrowRight, UserPlus, LogIn, Users, Lock } from "lucide-react";
 import { api } from "../services/api";
 
 const AVATARS = ["⚡", "⏳", "🌀", "🔥", "🔮", "🚀", "🪐", "💎", "👾", "🤖"];
@@ -27,6 +27,21 @@ export default function PlayerLoginView({ onLoginSuccess }) {
   const [errorMsg, setErrorMsg] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  // Automatically fetch next unique sequential Team ID when in registration mode
+  useEffect(() => {
+    if (isRegister) {
+      api.getNextTeamId()
+        .then((res) => {
+          if (res?.next_team_id) {
+            setFormData((prev) => ({ ...prev, team_id: res.next_team_id }));
+          }
+        })
+        .catch(() => {
+          setFormData((prev) => ({ ...prev, team_id: prev.team_id || "TEAM-01" }));
+        });
+    }
+  }, [isRegister]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg("");
@@ -35,8 +50,8 @@ export default function PlayerLoginView({ onLoginSuccess }) {
     try {
       if (isRegister) {
         const team = await api.teamRegister(formData);
-        // Automatically log in
-        const loginRes = await api.teamLogin(formData.team_id, formData.password);
+        const assignedId = team.team_id || formData.team_id;
+        const loginRes = await api.teamLogin(assignedId, formData.password);
         localStorage.setItem("loop_token", loginRes.token);
         localStorage.setItem("loop_role", "team");
         onLoginSuccess(team, "team");
@@ -115,17 +130,44 @@ export default function PlayerLoginView({ onLoginSuccess }) {
             )}
 
             <div>
-              <label className="block text-xs font-mono text-slate-600 dark:text-gray-400 uppercase tracking-wider mb-1">
-                Team ID / Username *
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="e.g. TEAM-01 or 1RV22CS001"
-                value={formData.team_id}
-                onChange={(e) => setFormData({ ...formData, team_id: e.target.value.toUpperCase() })}
-                className="w-full px-4 py-3 rounded-xl bg-slate-100 dark:bg-black/60 border border-slate-300 dark:border-temporal-border focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 text-cyan-700 dark:text-cyan-300 font-mono font-bold uppercase outline-none transition-all placeholder:normal-case placeholder:font-normal placeholder:text-slate-400 dark:placeholder:text-gray-600"
-              />
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-mono text-slate-600 dark:text-gray-400 uppercase tracking-wider">
+                  {isRegister ? "Assigned Team ID" : "Team ID / Username *"}
+                </label>
+                {isRegister && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/80 border border-amber-300 dark:border-amber-700">
+                    <Lock className="w-2.5 h-2.5" />
+                    <span>SYSTEM ASSIGNED • LOCKED</span>
+                  </span>
+                )}
+              </div>
+
+              {isRegister ? (
+                <div className="relative">
+                  <input
+                    type="text"
+                    readOnly
+                    value={formData.team_id || "GENERATING..."}
+                    className="w-full px-4 py-3 rounded-xl bg-slate-200 dark:bg-black/90 border-2 border-cyan-500/60 text-cyan-700 dark:text-cyan-300 font-mono font-black text-lg tracking-wider uppercase outline-none select-none cursor-not-allowed shadow-inner"
+                  />
+                  <div className="absolute right-3.5 top-3.5 text-cyan-600 dark:text-cyan-400 flex items-center gap-1.5 font-mono text-xs font-bold pointer-events-none">
+                    <Lock className="w-4 h-4" />
+                    <span className="hidden sm:inline">LOCKED</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-gray-400 font-mono mt-1.5">
+                    This unique ID is permanently bound to your team. Save it for tournament identification.
+                  </p>
+                </div>
+              ) : (
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. TEAM-01"
+                  value={formData.team_id}
+                  onChange={(e) => setFormData({ ...formData, team_id: e.target.value.toUpperCase() })}
+                  className="w-full px-4 py-3 rounded-xl bg-slate-100 dark:bg-black/60 border border-slate-300 dark:border-temporal-border focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 text-cyan-700 dark:text-cyan-300 font-mono font-bold uppercase outline-none transition-all placeholder:normal-case placeholder:font-normal placeholder:text-slate-400 dark:placeholder:text-gray-600"
+                />
+              )}
             </div>
 
             <div>
