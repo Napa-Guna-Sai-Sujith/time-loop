@@ -331,25 +331,49 @@ export default function OrganizerDashboardView({ onLogout }) {
 
         {/* Master Game Control Buttons */}
         <div className="flex flex-wrap items-center gap-2">
-          {stats?.event_status === "LOBBY" ? (
+          {/* Always show START GAME button if in LOBBY or not running */}
+          {stats?.event_status !== "RUNNING" && (
             <button
               onClick={() => setShowStartModal(true)}
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-black font-extrabold font-mono text-xs uppercase flex items-center gap-2 shadow-lg shadow-green-500/25 transition-all"
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-black font-extrabold font-mono text-xs uppercase flex items-center gap-2 shadow-lg shadow-green-500/25 transition-all animate-pulse"
+              title="Start Tournament & Activate Level 1"
             >
               <Play className="w-4 h-4 fill-current" />
               <span>START GAME</span>
             </button>
-          ) : (
+          )}
+
+          {/* Running State Controls: Pause & Restart */}
+          {stats?.event_status === "RUNNING" && (
+            <>
+              <button
+                onClick={handlePauseResume}
+                className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-mono text-xs uppercase font-bold flex items-center gap-1.5 transition-all shadow-lg shadow-amber-500/20"
+                title="Pause active tournament countdown"
+              >
+                <Pause className="w-4 h-4" />
+                <span>PAUSE GAME</span>
+              </button>
+              <button
+                onClick={() => setShowStartModal(true)}
+                className="px-4 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white font-mono text-xs uppercase font-bold flex items-center gap-1.5 transition-all"
+                title="Trigger Start / Restart"
+              >
+                <Play className="w-4 h-4 fill-current" />
+                <span>START / RESTART</span>
+              </button>
+            </>
+          )}
+
+          {/* Paused State Controls */}
+          {stats?.event_status === "PAUSED" && (
             <button
               onClick={handlePauseResume}
-              className={`px-4 py-2.5 rounded-xl font-mono text-xs uppercase font-bold flex items-center gap-1.5 transition-all ${
-                stats?.event_status === "RUNNING"
-                  ? "bg-amber-500 text-black hover:bg-amber-400"
-                  : "bg-green-500 text-black hover:bg-green-400"
-              }`}
+              className="px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-mono text-xs uppercase font-bold flex items-center gap-1.5 transition-all shadow-lg"
+              title="Resume tournament"
             >
-              {stats?.event_status === "RUNNING" ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-current" />}
-              <span>{stats?.event_status === "RUNNING" ? "PAUSE GAME" : "RESUME GAME"}</span>
+              <Play className="w-4 h-4 fill-current" />
+              <span>RESUME GAME</span>
             </button>
           )}
 
@@ -420,6 +444,82 @@ export default function OrganizerDashboardView({ onLogout }) {
       {/* --- TAB 1: PRIVATE LEADERBOARD --- */}
       {activeTab === "leaderboard" && (
         <div className="space-y-6">
+          {/* Prominent Tournament Live Control Card */}
+          <div className="glass-panel-glow rounded-3xl p-5 border border-cyan-500/40 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl">
+            <div className="flex items-center gap-4">
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-mono shadow-lg ${
+                stats?.event_status === "RUNNING"
+                  ? "bg-green-500/20 border border-green-500 text-green-400 animate-pulse"
+                  : stats?.event_status === "PAUSED"
+                  ? "bg-amber-500/20 border border-amber-500 text-amber-400"
+                  : "bg-cyan-500/20 border border-cyan-500 text-cyan-400"
+              }`}>
+                {stats?.event_status === "RUNNING" ? "▶" : stats?.event_status === "PAUSED" ? "⏸" : "⏱"}
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs text-slate-500 dark:text-gray-400 uppercase tracking-widest">
+                    TOURNAMENT PROTOCOL
+                  </span>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase ${
+                    stats?.event_status === "RUNNING"
+                      ? "bg-green-500/20 text-green-400 border border-green-500/50"
+                      : stats?.event_status === "PAUSED"
+                      ? "bg-amber-500/20 text-amber-400 border border-amber-500/50"
+                      : "bg-purple-500/20 text-purple-300 border border-purple-500/50"
+                  }`}>
+                    {stats?.event_status || "LOBBY"}
+                  </span>
+                </div>
+                <h4 className="text-base sm:text-lg font-black font-mono text-slate-900 dark:text-white mt-0.5">
+                  {stats?.event_status === "RUNNING"
+                    ? "Tournament is actively running across all connected devices."
+                    : stats?.event_status === "PAUSED"
+                    ? "Tournament is currently paused."
+                    : `${stats?.waiting_teams !== undefined ? stats.waiting_teams : (stats?.total_teams || 0)} Team(s) waiting in Lobby for Start Signal`}
+                </h4>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 w-full md:w-auto justify-end flex-wrap">
+              <button
+                onClick={() => setShowStartModal(true)}
+                className="px-6 py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-black font-black font-mono text-xs uppercase flex items-center gap-2 shadow-xl shadow-green-500/30 transition-all hover:scale-105 active:scale-95"
+              >
+                <Play className="w-4 h-4 fill-current" />
+                <span>START GAME</span>
+              </button>
+
+              {stats?.event_status === "RUNNING" && (
+                <button
+                  onClick={handlePauseResume}
+                  className="px-4 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold font-mono text-xs uppercase flex items-center gap-1.5 transition-all shadow-lg"
+                >
+                  <Pause className="w-4 h-4" />
+                  <span>PAUSE</span>
+                </button>
+              )}
+
+              {stats?.event_status === "PAUSED" && (
+                <button
+                  onClick={handlePauseResume}
+                  className="px-4 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold font-mono text-xs uppercase flex items-center gap-1.5 transition-all shadow-lg"
+                >
+                  <Play className="w-4 h-4 fill-current" />
+                  <span>RESUME</span>
+                </button>
+              )}
+
+              <button
+                onClick={handleResetGame}
+                className="px-3.5 py-3 rounded-xl bg-slate-100 dark:bg-temporal-card hover:bg-slate-200 dark:hover:bg-temporal-cardLight border border-slate-300 dark:border-temporal-border text-slate-700 dark:text-gray-300 text-xs font-mono font-bold flex items-center gap-1.5 transition-all"
+                title="Reset tournament back to Lobby mode"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>RESET</span>
+              </button>
+            </div>
+          </div>
           <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-temporal-border">
             <div>
               <h3 className="text-base font-mono font-bold text-slate-900 dark:text-white flex items-center gap-2">
