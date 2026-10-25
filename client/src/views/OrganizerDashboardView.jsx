@@ -55,6 +55,18 @@ export default function OrganizerDashboardView({ onLogout }) {
   const [settingsForm, setSettingsForm] = useState(null);
   const [catDistribution, setCatDistribution] = useState({});
   const [saveSuccessMsg, setSaveSuccessMsg] = useState("");
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [savePopupModal, setSavePopupModal] = useState(null);
+
+  // Auto-dismiss save popup after 6 seconds if not manually closed
+  useEffect(() => {
+    if (savePopupModal) {
+      const timer = setTimeout(() => {
+        setSavePopupModal(null);
+      }, 6000);
+      return () => clearTimeout(timer);
+    }
+  }, [savePopupModal]);
 
   // Organizer password change
   const [passForm, setPassForm] = useState({ current_password: "", new_password: "", confirm_password: "" });
@@ -235,8 +247,18 @@ export default function OrganizerDashboardView({ onLogout }) {
     }
     try {
       await api.updateEventSettings({ category_distribution: catDistribution });
+      setSettings(prev => ({ ...prev, category_distribution: catDistribution }));
       setSaveSuccessMsg("Category distribution saved!");
-      setTimeout(() => setSaveSuccessMsg(""), 3000);
+      setSavePopupModal({
+        title: "CATEGORY DISTRIBUTION SAVED!",
+        subtitle: `Question quota per category successfully allocated (${target} questions per attempt).`,
+        timestamp: new Date().toLocaleTimeString(),
+        details: Object.entries(catDistribution).map(([cat, count]) => ({
+          label: cat,
+          value: `${count} Question(s)`
+        }))
+      });
+      setTimeout(() => setSaveSuccessMsg(""), 5000);
     } catch (err) {
       alert(err.message);
     }
@@ -245,12 +267,30 @@ export default function OrganizerDashboardView({ onLogout }) {
   // --- Settings ---
   const handleSaveSettings = async (e) => {
     e.preventDefault();
+    setIsSavingSettings(true);
     try {
       await api.updateEventSettings(settingsForm);
+      setSettings(prev => ({ ...prev, ...settingsForm }));
       setSaveSuccessMsg("Event settings saved successfully!");
-      setTimeout(() => setSaveSuccessMsg(""), 3000);
+      setSavePopupModal({
+        title: "EVENT SETTINGS SAVED!",
+        subtitle: "Tournament configuration and rules have been updated live in the database.",
+        timestamp: new Date().toLocaleTimeString(),
+        details: [
+          { label: "Event Title", value: settingsForm.title || "Untangled Logic Arena" },
+          { label: "Timer Duration", value: `${Math.floor((settingsForm.timer_duration_seconds || 900) / 60)}m ${(settingsForm.timer_duration_seconds || 900) % 60}s (${settingsForm.timer_duration_seconds || 900}s)` },
+          { label: "Tokens Per Level", value: `${settingsForm.starting_tokens || 3} Tokens` },
+          { label: "Max Capacity", value: `${settingsForm.max_teams_limit || 20} Teams` },
+          { label: "Global Proctoring", value: settingsForm.proctor_enabled !== false ? "ACTIVATED (ON)" : "DISABLED (OFF)", highlight: settingsForm.proctor_enabled !== false ? "green" : "red" },
+          { label: "Registration Status", value: settingsForm.registration_open ? "OPEN" : "CLOSED", highlight: settingsForm.registration_open ? "green" : "amber" },
+          { label: "Answer Explanations", value: settingsForm.show_explanations ? "VISIBLE" : "HIDDEN" }
+        ]
+      });
+      setTimeout(() => setSaveSuccessMsg(""), 5000);
     } catch (err) {
-      alert(err.message);
+      alert("Error saving event settings: " + err.message);
+    } finally {
+      setIsSavingSettings(false);
     }
   };
 
@@ -884,11 +924,19 @@ export default function OrganizerDashboardView({ onLogout }) {
             </div>
             <button
               onClick={handleSaveCategories}
-              className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-mono text-xs font-bold shadow-lg"
+              className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-mono text-xs font-bold shadow-lg flex items-center gap-1.5"
             >
-              Save Distribution
+              <Save className="w-3.5 h-3.5" />
+              <span>Save Distribution</span>
             </button>
           </div>
+
+          {saveSuccessMsg && (
+            <div className="mt-4 p-3 rounded-xl bg-purple-950/80 border border-purple-500/80 text-purple-300 font-mono text-xs flex items-center gap-2 shadow-lg animate-pulse">
+              <CheckCircle2 className="w-4 h-4 text-purple-400 shrink-0" />
+              <span className="font-bold">{saveSuccessMsg}</span>
+            </div>
+          )}
         </div>
       )}
 
@@ -1104,11 +1152,32 @@ export default function OrganizerDashboardView({ onLogout }) {
               </label>
             </div>
 
+            {saveSuccessMsg && (
+              <div className="p-3 rounded-xl bg-green-950/80 border border-green-500/80 text-green-300 font-mono text-xs flex items-center justify-between gap-2 shadow-lg animate-pulse">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" />
+                  <span className="font-bold">{saveSuccessMsg}</span>
+                </div>
+                <span className="text-[10px] text-green-400/80 uppercase">LIVE UPDATED</span>
+              </div>
+            )}
+
             <button
               type="submit"
-              className="w-full py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-mono text-xs uppercase font-extrabold shadow-lg"
+              disabled={isSavingSettings}
+              className="w-full py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-black font-mono text-xs uppercase font-extrabold shadow-lg flex items-center justify-center gap-2 transition-all cursor-pointer"
             >
-              Save Event Rules
+              {isSavingSettings ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Saving Event Rules...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  <span>Save Event Rules</span>
+                </>
+              )}
             </button>
           </form>
 
@@ -1298,6 +1367,64 @@ export default function OrganizerDashboardView({ onLogout }) {
           isSaving={isSavingTeam}
           errorMsg={teamSaveError}
         />
+      )}
+
+      {/* Event Save Success Pop-up Modal */}
+      {savePopupModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in select-none">
+          <div className="relative max-w-md w-full bg-slate-950 border border-green-500/70 rounded-3xl p-6 sm:p-7 shadow-[0_0_60px_rgba(34,197,94,0.35)] text-center animate-in zoom-in-95 duration-200">
+            {/* Top Close Button */}
+            <button
+              onClick={() => setSavePopupModal(null)}
+              className="absolute top-4 right-4 p-2 text-gray-400 hover:text-white rounded-full hover:bg-gray-800 transition"
+              title="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Glowing Success Badge */}
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-green-500/10 border border-green-500/40 flex items-center justify-center shadow-[0_0_30px_rgba(34,197,94,0.3)]">
+              <CheckCircle2 className="w-9 h-9 text-green-400 animate-pulse" />
+            </div>
+
+            <h3 className="text-lg font-mono font-black text-white tracking-wider uppercase mb-1">
+              {savePopupModal.title || "Event Saved Successfully!"}
+            </h3>
+            <p className="text-xs text-gray-400 font-mono mb-5">
+              {savePopupModal.subtitle || "Tournament settings have been updated and applied."}
+            </p>
+
+            {/* Configuration Details Summary */}
+            {savePopupModal.details && savePopupModal.details.length > 0 && (
+              <div className="bg-black/70 border border-gray-800 rounded-2xl p-4 mb-5 space-y-2 text-left">
+                {savePopupModal.details.map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between text-xs font-mono border-b border-gray-900 pb-1.5 last:border-0 last:pb-0">
+                    <span className="text-gray-400">{item.label}:</span>
+                    <span className={`font-bold ${
+                      item.highlight === "green" ? "text-green-400" :
+                      item.highlight === "red" ? "text-red-400" :
+                      item.highlight === "amber" ? "text-amber-400" :
+                      "text-cyan-300"
+                    }`}>
+                      {item.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button
+              onClick={() => setSavePopupModal(null)}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-400 hover:from-green-400 hover:to-emerald-300 text-black font-mono font-black text-xs uppercase tracking-wider shadow-lg transition-all cursor-pointer"
+            >
+              ✓ OK, Got It!
+            </button>
+
+            <div className="mt-3 text-[10px] font-mono text-gray-500">
+              Saved at {savePopupModal.timestamp || "Just now"} • Changes are live
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
