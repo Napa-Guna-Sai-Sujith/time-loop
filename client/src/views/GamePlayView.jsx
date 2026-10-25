@@ -102,11 +102,41 @@ export default function GamePlayView({
           // Fresh 15-min countdown for the next level
           setSecondsRemaining(15 * 60);
           setLocalResults({});
+        } else if (res?.status === "NEXT_SET") {
+          // Set finished with remaining time: continue countdown into next set!
+          setLocalResults({});
+          if (res?.next_question?.remaining_seconds !== undefined) {
+            setSecondsRemaining(res.next_question.remaining_seconds);
+          }
+          setFeedbackToast(res?.message || "Set finished! Time continues. Loading next set...");
+          setTimeout(() => setFeedbackToast(""), 4000);
         }
       } else {
         // INCORRECT ANSWER: Deduct 2 minutes 30 seconds (150s) penalty immediately!
         setLocalResults((prev) => ({ ...prev, [qNum]: "wrong" }));
         sounds.playGlitchBuzz();
+
+        if (res?.status === "TIMEOUT") {
+          // Timer reached 0 (due to 6 wrong questions = 15m penalty, or elapsed time)! 1 token lost!
+          setLocalResults({});
+          setSecondsRemaining(15 * 60);
+          setFeedbackToast(res?.message || "Time reached 0! 1 token lost. Starting fresh 15-minute chance...");
+          setTimeout(() => setFeedbackToast(""), 4500);
+          return;
+        }
+
+        if (res?.status === "NEXT_SET") {
+          // Set finished with remaining time: continue countdown into next set!
+          setLocalResults({});
+          if (res?.next_question?.remaining_seconds !== undefined) {
+            setSecondsRemaining(res.next_question.remaining_seconds);
+          }
+          setPenaltyNotice(true);
+          setTimeout(() => setPenaltyNotice(false), 2500);
+          setFeedbackToast(res?.message || "Set finished! Time continues. Loading next set...");
+          setTimeout(() => setFeedbackToast(""), 4000);
+          return;
+        }
 
         if (res?.status === "SET_FAILED") {
           setLocalResults({});
