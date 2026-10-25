@@ -5,8 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
-from backend.models import Team, Question, EventSettings, TeamLevelState
-from backend.schemas import QuestionPlayerView, AnswerSubmitRequest, AnswerSubmitResponse
+from backend.models import Team, Question, EventSettings, TeamLevelState, AuditLog
+from backend.schemas import QuestionPlayerView, AnswerSubmitRequest, AnswerSubmitResponse, ProctorViolationRequest
 from backend.auth import get_current_team
 from backend.game_engine import (
     get_or_create_level_state,
@@ -60,8 +60,12 @@ def get_player_state(
             "status": team.status,
             "total_questions_solved": team.total_questions_solved,
             "total_score": team.total_score,
-            "is_qualified": team.is_qualified
+            "is_qualified": team.is_qualified,
+            "proctor_strikes": team.proctor_strikes or 0,
+            "proctor_chances": max(0, 3 - (team.proctor_strikes or 0)),
+            "eliminated_by_proctor": team.eliminated_by_proctor or False
         },
+        "proctor_enabled": settings.proctor_enabled if (settings and settings.proctor_enabled is not None) else True,
         "active_question": active_question,
         "current_question": active_question,
         "remaining_seconds": active_question.remaining_seconds if active_question else (settings.timer_duration_seconds if settings else 900),
@@ -167,7 +171,58 @@ async def trigger_timeout(
         "status": team.status,
         "total_questions_solved": team.total_questions_solved,
         "total_score": team.total_score,
-        "is_qualified": team.is_qualified
+        "is_qualified": team.is_qualified,
+        "proctor_strikes": team.proctor_strikes or 0,
+        "proctor_chances": max(0, 3 - (team.proctor_strikes or 0)),
+        "eliminated_by_proctor": team.eliminated_by_proctor or False
     }
 
     return result
+
+@router.post("/proctor-violation")
+async def report_proctor_violation(
+    payload: ProctorViolationRequest,
+    team: Team = Depends(get_current_team),
+    db: Session = Depends(get_db)
+):
+    settings = db.query(EventSettings).first()
+    if not settings or not settings.proctor_enabled:
+        return {"ignored": True, "message": "Proctoring is disabled globally."}
+
+    if team.status in ["ELIMINATED", "ESCAPED"]:
+        return {"ignored": True, "status": team.status}
+
+    team.proctor_strikes = (team.proctor_strikes or 0) + 1
+    chances_remaining = max(0, 3 - team.proctor_strikes)
+    is_eliminated = team.proctor_strikes >= 3
+
+    if is_eliminated:
+        team.status = "ELIMINATED"
+        team.eliminated_by_proctor = True
+
+    audit = AuditLog(
+        action="PROCTOR_DISQUALIFIED" if is_eliminated else "PROCTOR_VIOLATION",
+        details=f"Team '{team.team_name}' violation '{payload.violation_type}'. Strike {team.proctor_strikes}/3. {chances_remaining} chances remaining. {payload.details or ''}".strip(),
+        actor=team.team_name
+    )
+    db.add(audit)
+    db.commit()
+
+    # Broadcast update to organizers so private leaderboard and audit reflects in real time
+    await ws_manager.broadcast_organizers("proctor_strike_logged", {
+        "team_id": team.team_id,
+        "team_name": team.team_name,
+        "strikes": team.proctor_strikes,
+        "chances_remaining": chances_remaining,
+        "violation": payload.violation_type,
+        "is_eliminated": is_eliminated
+    })
+    await ws_manager.broadcast_all("leaderboard_update", {})
+
+    return {
+        "success": True,
+        "strikes": team.proctor_strikes,
+        "chances_remaining": chances_remaining,
+        "is_eliminated": is_eliminated,
+        "message": f"Proctor Strike {team.proctor_strikes}/3 recorded. {chances_remaining} chances remaining." if not is_eliminated else "You have exhausted all 3 proctor chances and are disqualified."
+    }

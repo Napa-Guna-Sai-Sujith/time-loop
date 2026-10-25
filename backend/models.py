@@ -33,6 +33,8 @@ class EventSettings(Base):
     registration_open = Column(Boolean, default=True)
     show_explanations = Column(Boolean, default=True)
     final_stage_open = Column(Boolean, default=False)
+    proctor_enabled = Column(Boolean, default=True)
+    max_teams_limit = Column(Integer, default=20)
     started_at = Column(DateTime, nullable=True)
     paused_at = Column(DateTime, nullable=True)
 
@@ -55,6 +57,8 @@ class Team(Base):
     total_score = Column(Float, default=0.0)
     final_rank = Column(Integer, nullable=True)
     is_qualified = Column(Boolean, default=False)
+    proctor_strikes = Column(Integer, default=0)
+    eliminated_by_proctor = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     last_active_at = Column(DateTime, default=datetime.datetime.utcnow)
 

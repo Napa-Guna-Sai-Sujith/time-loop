@@ -13,7 +13,9 @@ export default function GamePlayView({
   onSubmitAnswer,
   onTimeout,
   isSubmitting = false,
-  isPaused = false
+  isPaused = false,
+  proctorEnabled = true,
+  onProctorEliminated
 }) {
   const [secondsRemaining, setSecondsRemaining] = useState(() => {
     return currentQuestion?.remaining_seconds !== undefined
@@ -140,7 +142,12 @@ export default function GamePlayView({
   return (
     <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-6 relative">
       {/* Anti-cheat background guard */}
-      <AntiCheatShield player={team} isActive={true} />
+      <AntiCheatShield
+        player={team}
+        isActive={true}
+        proctorEnabled={proctorEnabled}
+        onEliminated={onProctorEliminated}
+      />
 
       {/* Timeline Saved Prompt Animation */}
       <TimelineSaveAnimation

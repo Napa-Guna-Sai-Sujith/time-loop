@@ -6,6 +6,7 @@ import GamePlayView from "./views/GamePlayView";
 import FinalStageView from "./views/FinalStageView";
 import EliminatedView from "./views/EliminatedView";
 import EscapedView from "./views/EscapedView";
+import PublicLeaderboardView from "./views/PublicLeaderboardView";
 import OrganizerLoginView from "./views/OrganizerLoginView";
 import OrganizerDashboardView from "./views/OrganizerDashboardView";
 import CountdownModal from "./components/CountdownModal";
@@ -21,9 +22,11 @@ export default function App() {
     return saved !== null ? saved === "dark" : true;
   });
 
-  // Navigation Route: 'home' | 'organizer'
+  // Navigation Route: 'home' | 'organizer' | 'leaderboard'
   const [route, setRoute] = useState(() => {
-    return window.location.hash === "#/organizer" ? "organizer" : "home";
+    if (window.location.hash === "#/organizer") return "organizer";
+    if (window.location.hash === "#/leaderboard") return "leaderboard";
+    return "home";
   });
 
   // Authentication State
@@ -34,6 +37,7 @@ export default function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [emergencyAlert, setEmergencyAlert] = useState(null);
   const [countdown, setCountdown] = useState(null);
+  const [proctorEnabled, setProctorEnabled] = useState(true);
 
   // Sync theme with HTML document element
   useEffect(() => {
@@ -55,6 +59,8 @@ export default function App() {
     const handleHash = () => {
       if (window.location.hash === "#/organizer") {
         setRoute("organizer");
+      } else if (window.location.hash === "#/leaderboard") {
+        setRoute("leaderboard");
       } else {
         setRoute("home");
       }
@@ -67,6 +73,9 @@ export default function App() {
     if (newRoute === "organizer") {
       setRoute("organizer");
       window.location.hash = "#/organizer";
+    } else if (newRoute === "leaderboard") {
+      setRoute("leaderboard");
+      window.location.hash = "#/leaderboard";
     } else {
       setRoute("home");
       window.location.hash = "";
@@ -108,6 +117,9 @@ export default function App() {
     try {
       const state = await api.getPlayerState();
       setEventStatus(state.event_status);
+      if (state.proctor_enabled !== undefined) {
+        setProctorEnabled(state.proctor_enabled);
+      }
       if (state.team) {
         setTeam(state.team);
       }
@@ -167,6 +179,14 @@ export default function App() {
           sounds.playGlitchBuzz();
           setTimeout(() => setEmergencyAlert(null), 8000);
         }
+      }),
+      wsClient.on("proctor_settings_updated", (data) => {
+        if (data?.proctor_enabled !== undefined) {
+          setProctorEnabled(data.proctor_enabled);
+        }
+      }),
+      wsClient.on("proctor_restored", () => {
+        refreshPlayerState();
       }),
       wsClient.on("final_stage_opened", () => {
         setEventStatus("FINAL_STAGE");
@@ -383,6 +403,8 @@ export default function App() {
           onTimeout={handleTimeout}
           isSubmitting={isSubmitting}
           isPaused={eventStatus === "PAUSED"}
+          proctorEnabled={proctorEnabled}
+          onProctorEliminated={() => refreshPlayerState()}
         />
       );
     }
@@ -440,6 +462,8 @@ export default function App() {
           ) : (
             <OrganizerLoginView onLoginSuccess={handleOrganizerLogin} />
           )
+        ) : route === "leaderboard" ? (
+          <PublicLeaderboardView />
         ) : (
           renderParticipantView()
         )}

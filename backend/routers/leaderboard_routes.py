@@ -10,12 +10,11 @@ from backend.models import Organizer, EventSettings, Team, TeamLevelState
 from backend.schemas import LeaderboardResponse, LeaderboardEntry
 from backend.auth import get_current_organizer
 
-# STRICTLY GUARDED: Only authenticated Organizer can access Leaderboard routes!
-router = APIRouter(prefix="/api/leaderboard", tags=["Private Leaderboard"])
+# Leaderboard routes: Public viewing for teammates & participants, authenticated export for organizers
+router = APIRouter(prefix="/api/leaderboard", tags=["Leaderboard"])
 
 @router.get("", response_model=LeaderboardResponse)
-def get_private_leaderboard(
-    org: Organizer = Depends(get_current_organizer),
+def get_leaderboard(
     db: Session = Depends(get_db)
 ):
     settings = db.query(EventSettings).first()
@@ -40,6 +39,9 @@ def get_private_leaderboard(
         if t.final_rank is not None and t.is_qualified:
             rank = t.final_rank
 
+        strikes = t.proctor_strikes or 0
+        chances = max(0, 3 - strikes)
+
         rankings.append(LeaderboardEntry(
             rank=rank,
             team_id=t.team_id,
@@ -53,6 +55,10 @@ def get_private_leaderboard(
             total_time_seconds=round(t.total_time_seconds, 1),
             total_score=round(t.total_score, 2),
             is_qualified=t.is_qualified,
+            proctor_strikes=strikes,
+            proctor_chances=chances,
+            eliminated_by_proctor=t.eliminated_by_proctor or False,
+            created_at=t.created_at,
             last_active_at=t.last_active_at
         ))
 

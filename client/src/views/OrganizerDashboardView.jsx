@@ -3,7 +3,7 @@ import {
   Terminal, Play, Pause, RotateCcw, Download, Upload, Plus, Trash2, Edit3,
   Copy, Eye, Search, Filter, ShieldCheck, Trophy, Settings, Users,
   BookOpen, HelpCircle, AlertCircle, Save, Check, RefreshCw, KeyRound,
-  FileSpreadsheet, Lock, LogOut, Sliders, X
+  FileSpreadsheet, Lock, LogOut, Sliders, X, ShieldAlert, CheckCircle2, XCircle, UserCheck
 } from "lucide-react";
 import { api } from "../services/api";
 import StartGameModal from "../components/StartGameModal";
@@ -254,6 +254,34 @@ export default function OrganizerDashboardView({ onLogout }) {
     }
   };
 
+  // --- Proctor Mode & Capacity Handlers ---
+  const handleToggleProctor = async () => {
+    try {
+      const current = settings?.proctor_enabled !== false;
+      await api.updateEventSettings({ proctor_enabled: !current });
+      setSettings(prev => ({ ...prev, proctor_enabled: !current }));
+      setSettingsForm(prev => ({ ...prev, proctor_enabled: !current }));
+      alert(`🛡️ Proctoring is now ${!current ? "ACTIVATED (Full-screen & Tab switch detection enforced)" : "DEACTIVATED (No proctoring on website)"}.`);
+      loadAllData();
+    } catch (err) {
+      alert("Error: " + err.message);
+    }
+  };
+
+  const handleRestoreProctor = async (teamId, teamName) => {
+    if (window.confirm(`Restore proctor access for ${teamName}? This will reset strikes to 0 (3 chances remaining) and reinstate the team.`)) {
+      try {
+        await api.restoreTeamProctor(teamId);
+        alert(`✅ Proctor access restored for ${teamName}! Chances reset to 3.`);
+        loadAllData();
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    }
+  };
+
+  const [auditFilter, setAuditFilter] = useState("ALL");
+
   // --- Password Change ---
   const handleChangePassword = async (e) => {
     e.preventDefault();
@@ -376,6 +404,20 @@ export default function OrganizerDashboardView({ onLogout }) {
               <span>RESUME GAME</span>
             </button>
           )}
+
+          {/* Global Proctor Mode On/Off Toggle Button */}
+          <button
+            onClick={handleToggleProctor}
+            className={`px-3.5 py-2.5 rounded-xl font-mono text-xs uppercase font-extrabold flex items-center gap-1.5 transition-all shadow-lg ${
+              settings?.proctor_enabled !== false
+                ? "bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-black shadow-green-500/25 ring-2 ring-green-400/50"
+                : "bg-slate-700 hover:bg-slate-600 text-gray-300 border border-gray-600"
+            }`}
+            title="Toggle Proctor Mode (Fullscreen enforcement, Tab switch tracking, 3 chances per player)"
+          >
+            <ShieldAlert className="w-4 h-4" />
+            <span>PROCTOR: {settings?.proctor_enabled !== false ? "ON" : "OFF"}</span>
+          </button>
 
           <button
             onClick={handleOpenFinalStage}
@@ -559,13 +601,15 @@ export default function OrganizerDashboardView({ onLogout }) {
                   <th className="p-3.5">Solved</th>
                   <th className="p-3.5">Tokens Used</th>
                   <th className="p-3.5">Time (s)</th>
+                  <th className="p-3.5 text-center">Proctor</th>
                   <th className="p-3.5 text-right">Score</th>
+                  <th className="p-3.5 text-center">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-temporal-border">
                 {leaderboard.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="p-6 text-center text-gray-500">
+                    <td colSpan={10} className="p-6 text-center text-gray-500">
                       No participating teams registered yet.
                     </td>
                   </tr>
@@ -607,8 +651,30 @@ export default function OrganizerDashboardView({ onLogout }) {
                       <td className="p-3.5">{team.questions_solved}</td>
                       <td className="p-3.5">{team.tokens_used}</td>
                       <td className="p-3.5">{team.total_time_seconds}s</td>
+                      <td className="p-3.5 text-center">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border ${
+                          (team.proctor_strikes || 0) >= 3 || team.eliminated_by_proctor
+                            ? "bg-red-950/80 border-red-500 text-red-300"
+                            : (team.proctor_strikes || 0) > 0
+                            ? "bg-amber-950/80 border-amber-500 text-amber-300"
+                            : "bg-green-950/80 border-green-500 text-green-300"
+                        }`}>
+                          {team.proctor_chances ?? (3 - (team.proctor_strikes || 0))}/3
+                        </span>
+                      </td>
                       <td className="p-3.5 text-right font-black text-cyan-400 text-sm">
                         {team.total_score}
+                      </td>
+                      <td className="p-3.5 text-center">
+                        {(team.eliminated_by_proctor || team.status === "ELIMINATED" || (team.proctor_strikes || 0) > 0) && (
+                          <button
+                            onClick={() => handleRestoreProctor(team.team_id, team.team_name)}
+                            className="px-2.5 py-1 rounded-lg bg-cyan-950 hover:bg-cyan-900 border border-cyan-400 text-cyan-300 font-mono text-[10px] font-bold transition-all shadow-sm shadow-cyan-500/20"
+                            title="Restore Proctor Access & Reset 3 Chances"
+                          >
+                            Unban / Restore
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))
@@ -848,9 +914,25 @@ export default function OrganizerDashboardView({ onLogout }) {
                   <div className="text-xs text-gray-400 font-mono mt-1">
                     Level {t.current_level} • Score: {t.total_score} pts • Tokens: {t.tokens_remaining}
                   </div>
+                  <div className="text-[10px] text-gray-400 font-mono mt-1.5 flex flex-wrap items-center gap-2">
+                    <span className="text-gray-400">🕒 Registered: {t.created_at ? new Date(t.created_at).toLocaleString() : "N/A"}</span>
+                    <span>•</span>
+                    <span className={(t.proctor_strikes || 0) >= 3 || t.eliminated_by_proctor ? "text-red-400 font-bold" : "text-green-400"}>
+                      🛡️ Proctor: {t.proctor_chances ?? (3 - (t.proctor_strikes || 0))}/3 Chances ({t.proctor_strikes || 0} Strikes)
+                    </span>
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-1.5">
+                  {(t.eliminated_by_proctor || t.status === "ELIMINATED" || (t.proctor_strikes || 0) > 0) && (
+                    <button
+                      onClick={() => handleRestoreProctor(t.team_id, t.team_name)}
+                      className="p-2 rounded-xl border border-cyan-500/50 hover:bg-cyan-950 text-cyan-300"
+                      title="Restore Proctor Access & Reset 3 Chances"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                   <button
                     onClick={async () => {
                       const newP = window.prompt(`Reset password for team ${t.team_name}:`);
@@ -973,6 +1055,35 @@ export default function OrganizerDashboardView({ onLogout }) {
               </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <div>
+                <label className="block text-xs font-mono text-gray-400 uppercase mb-1">Max Teams Limit (Capacity)</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="1000"
+                  value={settingsForm.max_teams_limit || 20}
+                  onChange={(e) => setSettingsForm({ ...settingsForm, max_teams_limit: parseInt(e.target.value, 10) || 20 })}
+                  className="w-full px-3 py-2 rounded-xl bg-black/60 border border-gray-700 text-white font-mono text-xs outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono text-gray-400 uppercase mb-1">Global Proctoring</label>
+                <button
+                  type="button"
+                  onClick={() => setSettingsForm({ ...settingsForm, proctor_enabled: settingsForm.proctor_enabled === false ? true : false })}
+                  className={`w-full py-2 px-3 rounded-xl font-mono text-xs font-bold border transition-all ${
+                    settingsForm.proctor_enabled !== false
+                      ? "bg-green-950/80 border-green-500 text-green-300"
+                      : "bg-red-950/80 border-red-500 text-red-300"
+                  }`}
+                >
+                  {settingsForm.proctor_enabled !== false ? "PROCTOR ACTIVE (ON)" : "PROCTOR DISABLED (OFF)"}
+                </button>
+              </div>
+            </div>
+
             <div className="flex items-center gap-6 pt-2">
               <label className="flex items-center gap-2 cursor-pointer font-mono text-xs text-gray-300">
                 <input
@@ -1057,21 +1168,80 @@ export default function OrganizerDashboardView({ onLogout }) {
         </div>
       )}
 
-      {/* --- TAB 6: AUDIT LOGS --- */}
+      {/* --- TAB 6: AUDIT & REGISTRATION LOGS --- */}
       {activeTab === "audit" && (
-        <div className="glass-panel rounded-3xl p-6 border border-gray-800">
-          <h3 className="text-base font-mono font-bold text-white mb-4">ADMINISTRATIVE ACTION AUDIT LOGS</h3>
-          <div className="space-y-2 max-h-[500px] overflow-y-auto">
-            {auditLogs.map(l => (
-              <div key={l.id} className="p-3 rounded-xl bg-black/40 border border-gray-800 text-xs font-mono flex items-center justify-between">
-                <div>
-                  <span className="font-bold text-cyan-400">{l.action}</span>: <span className="text-gray-300">{l.details}</span>
-                </div>
-                <div className="text-[10px] text-gray-500 shrink-0 ml-4">
-                  {l.actor} • {new Date(l.created_at).toLocaleTimeString()}
-                </div>
-              </div>
-            ))}
+        <div className="glass-panel rounded-3xl p-6 border border-gray-800 space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-gray-800">
+            <div>
+              <h3 className="text-base font-mono font-bold text-white flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-cyan-400" />
+                <span>ACTIVITY, REGISTRATION & PROCTOR AUDIT LOGS</span>
+              </h3>
+              <p className="text-xs text-gray-400 font-mono mt-0.5">
+                Complete forensic timestamps for team registrations, proctor strikes, and admin events.
+              </p>
+            </div>
+
+            {/* Filter Pills */}
+            <div className="flex flex-wrap items-center gap-1.5 text-xs font-mono">
+              {[
+                { id: "ALL", label: `ALL (${auditLogs.length})` },
+                { id: "REGISTER", label: `REGISTRATIONS (${auditLogs.filter(l => l.action === "TEAM_REGISTERED").length})` },
+                { id: "PROCTOR", label: `PROCTOR (${auditLogs.filter(l => l.action?.includes("PROCTOR")).length})` }
+              ].map(f => (
+                <button
+                  key={f.id}
+                  onClick={() => setAuditFilter(f.id)}
+                  className={`px-3 py-1 rounded-lg border font-bold transition-all ${
+                    auditFilter === f.id
+                      ? "bg-cyan-500 text-black border-cyan-400 shadow-sm"
+                      : "bg-black/40 border-gray-800 text-gray-400 hover:text-white"
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
+            {auditLogs
+              .filter(l => {
+                if (auditFilter === "REGISTER") return l.action === "TEAM_REGISTERED";
+                if (auditFilter === "PROCTOR") return l.action?.includes("PROCTOR");
+                return true;
+              })
+              .map(l => {
+                const isReg = l.action === "TEAM_REGISTERED";
+                const isProctorViol = l.action === "PROCTOR_VIOLATION";
+                const isProctorDQ = l.action === "PROCTOR_DISQUALIFIED";
+                const isProctorRestore = l.action === "PROCTOR_RESTORED";
+
+                const badgeColor = isReg
+                  ? "bg-green-950 text-green-300 border-green-700"
+                  : isProctorDQ
+                  ? "bg-red-950 text-red-300 border-red-700 animate-pulse"
+                  : isProctorViol
+                  ? "bg-amber-950 text-amber-300 border-amber-700"
+                  : isProctorRestore
+                  ? "bg-cyan-950 text-cyan-300 border-cyan-700"
+                  : "bg-purple-950 text-purple-300 border-purple-800";
+
+                return (
+                  <div key={l.id} className="p-3 rounded-xl bg-black/40 border border-gray-800/80 text-xs font-mono flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:border-gray-700 transition-colors">
+                    <div className="flex items-start sm:items-center gap-2.5">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-wider shrink-0 ${badgeColor}`}>
+                        {l.action}
+                      </span>
+                      <span className="text-gray-200">{l.details}</span>
+                    </div>
+                    <div className="text-[11px] text-gray-400 shrink-0 sm:text-right font-medium pl-1">
+                      <span className="text-gray-500">{l.actor} • </span>
+                      <span className="text-cyan-400 font-bold">{new Date(l.created_at).toLocaleString()}</span>
+                    </div>
+                  </div>
+                );
+              })}
           </div>
         </div>
       )}

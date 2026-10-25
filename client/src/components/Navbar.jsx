@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Volume2, VolumeX, Sun, Moon, Clock, Terminal, Monitor, User, Lock, KeyRound, LogOut } from "lucide-react";
+import { Volume2, VolumeX, Sun, Moon, Clock, Terminal, Monitor, User, Lock, KeyRound, LogOut, Trophy } from "lucide-react";
 import { sounds } from "../audio/soundEngine";
 
 export default function Navbar({ 
@@ -80,6 +80,18 @@ export default function Navbar({
             >
               <User className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Player</span>
+            </button>
+            <button
+              onClick={() => onNavigate("leaderboard")}
+              className={`px-2.5 py-1 rounded flex items-center gap-1.5 transition-colors ${
+                currentRoute === "leaderboard"
+                  ? "bg-amber-500 text-black font-semibold shadow-sm shadow-amber-500/20"
+                  : "text-slate-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
+              }`}
+              title="Tournament Leaderboard"
+            >
+              <Trophy className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Leaderboard</span>
             </button>
             <button
               onClick={() => onNavigate("organizer")}

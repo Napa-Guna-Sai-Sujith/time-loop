@@ -88,6 +88,8 @@ def get_event_settings(
         registration_open=settings.registration_open,
         show_explanations=settings.show_explanations,
         final_stage_open=settings.final_stage_open,
+        proctor_enabled=settings.proctor_enabled if settings.proctor_enabled is not None else True,
+        max_teams_limit=settings.max_teams_limit if settings.max_teams_limit is not None else 20,
         started_at=settings.started_at,
         paused_at=settings.paused_at
     )
@@ -775,10 +777,53 @@ def update_team(
         team.total_score = payload.total_score
     if payload.is_qualified is not None:
         team.is_qualified = payload.is_qualified
+    if payload.proctor_strikes is not None:
+        team.proctor_strikes = payload.proctor_strikes
+    if payload.eliminated_by_proctor is not None:
+        team.eliminated_by_proctor = payload.eliminated_by_proctor
 
     db.commit()
     db.refresh(team)
     return {"success": True, "message": f"Team {team_id} updated successfully.", "team": TeamResponse.from_orm(team).dict()}
+
+@router.post("/teams/{team_id}/restore-proctor")
+async def restore_team_proctor_access(
+    team_id: str,
+    org: Organizer = Depends(get_current_organizer),
+    db: Session = Depends(get_db)
+):
+    team = db.query(Team).filter(Team.team_id == team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found.")
+
+    settings = db.query(EventSettings).first()
+
+    # Reset proctor strikes & restore access
+    team.proctor_strikes = 0
+    team.eliminated_by_proctor = False
+    if team.status == "ELIMINATED":
+        team.status = "ACTIVE" if (settings and settings.status == "RUNNING") else "WAITING"
+        if team.tokens_remaining <= 0:
+            team.tokens_remaining = settings.starting_tokens if settings else 3
+
+    audit = AuditLog(
+        action="PROCTOR_RESTORED",
+        details=f"Organizer '{org.username}' restored proctor access and reset all 3 chances for Team '{team.team_name}' ({team.team_id}).",
+        actor=org.username
+    )
+    db.add(audit)
+    db.commit()
+
+    await ws_manager.send_to_team(team.team_id, "proctor_restored", {
+        "message": "Organizer has restored your tournament access. All 3 proctor chances are reset."
+    })
+    await ws_manager.broadcast_all("leaderboard_update", {})
+
+    return {
+        "success": True,
+        "message": f"Proctor access restored for {team.team_name}. 3 chances restored and team reinstated.",
+        "team": TeamResponse.from_orm(team).dict()
+    }
 
 @router.delete("/teams/{team_id}")
 def delete_team(

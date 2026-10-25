@@ -92,6 +92,14 @@ def team_register(payload: TeamRegisterRequest, response: Response, db: Session 
     if settings and not settings.registration_open:
         raise HTTPException(status_code=400, detail="Registration is currently closed by the event organizer.")
 
+    max_limit = settings.max_teams_limit if (settings and settings.max_teams_limit) else 20
+    current_team_count = db.query(Team).count()
+    if current_team_count >= max_limit:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Registration full! Team capacity of {max_limit} teams has been reached. Please contact the tournament organizer."
+        )
+
     clean_name = payload.team_name.strip()
     if not clean_name or not payload.password:
         raise HTTPException(status_code=400, detail="Team name and password are required.")
@@ -130,6 +138,15 @@ def team_register(payload: TeamRegisterRequest, response: Response, db: Session 
     db.add(new_team)
     db.commit()
     db.refresh(new_team)
+
+    # Log registration in Audit Log with full timestamp
+    audit = AuditLog(
+        action="TEAM_REGISTERED",
+        details=f"Team '{new_team.team_name}' ({new_team.team_id}) registered. Dept: {new_team.department}.",
+        actor=new_team.team_name
+    )
+    db.add(audit)
+    db.commit()
 
     token = create_access_token(data={"sub": new_team.team_id, "role": "team"})
     response.set_cookie(

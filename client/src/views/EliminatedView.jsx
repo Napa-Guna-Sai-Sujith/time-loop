@@ -21,15 +21,19 @@ export default function EliminatedView({ player, team, wildCardData }) {
 
         {/* Big Elimination Title */}
         <h1 className="text-3xl sm:text-5xl font-black font-mono tracking-tight text-red-600 dark:text-red-500 mb-2 drop-shadow-[0_0_20px_rgba(255,42,95,0.4)]">
-          TIME LOOP FAILED
+          {p.eliminated_by_proctor ? "PROCTOR DISQUALIFIED" : "TIME LOOP FAILED"}
         </h1>
 
         <p className="text-base text-slate-700 dark:text-gray-300 font-mono mb-2">
-          Your team couldn't escape Level {p.level || 1}.
+          {p.eliminated_by_proctor
+            ? "Your team was disqualified for exceeding 3 proctor violation strikes."
+            : `Your team couldn't escape Level ${p.level || p.current_level || 1}.`}
         </p>
 
         <p className="text-sm text-red-600 dark:text-red-400 font-mono uppercase tracking-widest mb-8 font-bold">
-          3 Timeouts Exceeded // Eliminated from Tournament
+          {p.eliminated_by_proctor
+            ? "3 Proctor Chances Depleted // Admin Access Required"
+            : "Tokens Depleted // Eliminated from Tournament"}
         </p>
 
         {/* Stats card */}

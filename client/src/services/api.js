@@ -106,6 +106,23 @@ export const api = {
     return handleResponse(res);
   },
 
+  async reportProctorViolation(violation_type, details = "") {
+    const res = await fetch(`${API_BASE}/player/proctor-violation`, {
+      method: "POST",
+      headers: { ...getAuthHeader(), "Content-Type": "application/json" },
+      body: jsonBody({ violation_type, details })
+    });
+    return handleResponse(res);
+  },
+
+  async restoreTeamProctor(team_id) {
+    const res = await fetch(`${API_BASE}/organizer/teams/${encodeURIComponent(team_id)}/restore-proctor`, {
+      method: "POST",
+      headers: getAuthHeader()
+    });
+    return handleResponse(res);
+  },
+
   // Organizer: Stats, Settings, Controls
   async getOrganizerStats() {
     const res = await fetch(`${API_BASE}/organizer/stats`, {

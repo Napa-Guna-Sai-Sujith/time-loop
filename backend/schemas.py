@@ -38,6 +38,8 @@ class TeamUpdateRequest(BaseModel):
     tokens_remaining: Optional[int] = None
     total_score: Optional[float] = None
     is_qualified: Optional[bool] = None
+    proctor_strikes: Optional[int] = None
+    eliminated_by_proctor: Optional[bool] = None
 
 class TeamResponse(BaseModel):
     id: int
@@ -55,6 +57,8 @@ class TeamResponse(BaseModel):
     total_score: float
     final_rank: Optional[int] = None
     is_qualified: bool
+    proctor_strikes: int = 0
+    eliminated_by_proctor: bool = False
     created_at: datetime
     last_active_at: datetime
 
@@ -166,6 +170,8 @@ class EventSettingsResponse(BaseModel):
     registration_open: bool
     show_explanations: bool
     final_stage_open: bool
+    proctor_enabled: bool = True
+    max_teams_limit: int = 20
     started_at: Optional[datetime] = None
     paused_at: Optional[datetime] = None
 
@@ -184,6 +190,8 @@ class EventSettingsUpdate(BaseModel):
     registration_open: Optional[bool] = None
     show_explanations: Optional[bool] = None
     final_stage_open: Optional[bool] = None
+    proctor_enabled: Optional[bool] = None
+    max_teams_limit: Optional[int] = None
 
 # --- Leaderboard ---
 class LeaderboardEntry(BaseModel):
@@ -199,7 +207,15 @@ class LeaderboardEntry(BaseModel):
     total_time_seconds: float
     total_score: float
     is_qualified: bool
+    proctor_strikes: int = 0
+    proctor_chances: int = 3
+    eliminated_by_proctor: bool = False
+    created_at: Optional[datetime] = None
     last_active_at: datetime
+
+class ProctorViolationRequest(BaseModel):
+    violation_type: str
+    details: Optional[str] = None
 
 class LeaderboardResponse(BaseModel):
     event_status: str
