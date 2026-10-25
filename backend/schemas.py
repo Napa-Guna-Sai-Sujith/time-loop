@@ -120,6 +120,7 @@ class QuestionPlayerView(BaseModel):
     total_questions: int = 6
     remaining_seconds: int
     question_results: Optional[List[str]] = None
+    attempt_number: int = 1
 
 # --- Gameplay Schemas ---
 class AnswerSubmitRequest(BaseModel):
@@ -139,6 +140,7 @@ class AnswerSubmitResponse(BaseModel):
     question_number: Optional[int] = None
     total_questions: Optional[int] = None
     question_results: Optional[List[str]] = None
+    attempt_number: Optional[int] = None
 
 class TimeoutRequest(BaseModel):
     pass

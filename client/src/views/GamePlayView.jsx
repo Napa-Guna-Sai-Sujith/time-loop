@@ -28,8 +28,10 @@ export default function GamePlayView({
   const [localResults, setLocalResults] = useState({});
 
   const activeLevel = currentQuestion?.level || team?.current_level || 1;
+  const currentAttempt = currentQuestion?.attempt_number || 1;
   const timerRef = useRef(null);
   const currentLevelRef = useRef(activeLevel);
+  const currentAttemptRef = useRef(currentAttempt);
   const initializedRef = useRef(false);
   const onTimeoutRef = useRef(onTimeout);
   const lastTickRef = useRef(Date.now());
@@ -38,18 +40,19 @@ export default function GamePlayView({
     onTimeoutRef.current = onTimeout;
   }, [onTimeout]);
 
-  // Initialize once on mount or when level changes
+  // Initialize once on mount or when level / set changes
   useEffect(() => {
-    if (activeLevel !== currentLevelRef.current) {
+    if (activeLevel !== currentLevelRef.current || currentAttempt !== currentAttemptRef.current) {
       currentLevelRef.current = activeLevel;
+      currentAttemptRef.current = currentAttempt;
       setLocalResults({});
-      // Level advanced: give fresh 15-minute countdown
-      setSecondsRemaining(15 * 60);
+      // Level or Set advanced: give fresh countdown
+      setSecondsRemaining(currentQuestion?.remaining_seconds ?? (15 * 60));
     } else if (!initializedRef.current && currentQuestion?.remaining_seconds !== undefined) {
       initializedRef.current = true;
       setSecondsRemaining(currentQuestion.remaining_seconds);
     }
-  }, [activeLevel, currentQuestion?.remaining_seconds]);
+  }, [activeLevel, currentAttempt, currentQuestion?.remaining_seconds]);
 
   // CONTINUOUS TIMER COUNTDOWN: High precision delta countdown that never stalls, drifts, or restarts
   useEffect(() => {
@@ -96,11 +99,21 @@ export default function GamePlayView({
         if (res?.status === "LEVEL_CLEARED") {
           // Fresh 15-min countdown for the next level
           setSecondsRemaining(15 * 60);
+          setLocalResults({});
         }
       } else {
         // INCORRECT ANSWER: Deduct 2 minutes 30 seconds (150s) penalty immediately!
         setLocalResults((prev) => ({ ...prev, [qNum]: "wrong" }));
         sounds.playGlitchBuzz();
+
+        if (res?.status === "SET_FAILED") {
+          setLocalResults({});
+          setSecondsRemaining(15 * 60);
+          setFeedbackToast(res?.message || "Set failed! 1 token deducted. Loading next set...");
+          setTimeout(() => setFeedbackToast(""), 4000);
+          return;
+        }
+
         if (res?.next_question?.remaining_seconds !== undefined) {
           setSecondsRemaining(res.next_question.remaining_seconds);
         } else {
@@ -156,7 +169,7 @@ export default function GamePlayView({
                 LEVEL {activeLevel} OF 4
               </h2>
               <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-700">
-                15 MIN ATTEMPT
+                SET {currentQuestion?.attempt_number || 1} OF 3
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-gray-400 font-mono mt-0.5">
@@ -207,6 +220,7 @@ export default function GamePlayView({
               level={activeLevel}
               hasPenalty={penaltyNotice}
               questionResults={mergedQuestionResults}
+              setNumber={currentQuestion?.attempt_number || 1}
             />
           </div>
 

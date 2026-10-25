@@ -7,7 +7,8 @@ export default function CircularTimer({
   attemptNumber = 1,
   level = 1,
   hasPenalty = false,
-  questionResults = []
+  questionResults = [],
+  setNumber = 1
 }) {
   const percentage = Math.max(0, Math.min(100, (secondsRemaining / maxSeconds) * 100));
   const radius = 64;
@@ -107,7 +108,7 @@ export default function CircularTimer({
       {/* 6 Questions Progression Indicator for Current Level */}
       <div className="mt-4 flex flex-col items-center gap-1.5 w-full">
         <div className="text-[10px] font-mono text-slate-500 dark:text-gray-400 uppercase tracking-wider">
-          Level {level} Progress (6 Questions)
+          Level {level} • Set {setNumber} of 3 (6 Questions)
         </div>
         <div className="flex items-center justify-center gap-1.5 w-full">
           {[1, 2, 3, 4, 5, 6].map((qNum, i) => {

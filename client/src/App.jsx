@@ -119,7 +119,8 @@ export default function App() {
           tokens: q.tokens !== undefined ? q.tokens : state.tokens,
           question_number: q.question_number !== undefined ? q.question_number : state.question_number,
           total_questions: q.total_questions !== undefined ? q.total_questions : state.total_questions,
-          question_results: q.question_results !== undefined ? q.question_results : state.question_results
+          question_results: q.question_results !== undefined ? q.question_results : state.question_results,
+          attempt_number: q.attempt_number !== undefined ? q.attempt_number : (state.attempt_number || 1)
         });
       }
     } catch {
@@ -234,7 +235,8 @@ export default function App() {
         setCurrentQuestion({
           ...res.next_question,
           tokens: res.tokens_remaining ?? res.team?.tokens_remaining ?? res.next_question.tokens,
-          question_results: res.next_question.question_results ?? res.question_results
+          question_results: res.next_question.question_results ?? res.question_results,
+          attempt_number: res.next_question.attempt_number ?? res.attempt_number ?? 1
         });
       } else if (res.status === "ESCAPED" || res.status === "ELIMINATED") {
         setCurrentQuestion(null);
@@ -265,7 +267,9 @@ export default function App() {
       if (res.next_question) {
         setCurrentQuestion({
           ...res.next_question,
-          tokens: res.tokens_remaining ?? res.team?.tokens_remaining ?? res.next_question.tokens
+          tokens: res.tokens_remaining ?? res.team?.tokens_remaining ?? res.next_question.tokens,
+          question_results: res.next_question.question_results ?? [],
+          attempt_number: res.next_question.attempt_number ?? 1
         });
       } else if (res.status === "ELIMINATED") {
         setCurrentQuestion(null);
