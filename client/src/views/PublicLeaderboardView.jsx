@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { api } from "../services/api";
 import { wsClient } from "../utils/ws";
-import { Trophy, ShieldAlert, Award, Clock, Users, ArrowUpRight, Flame, RefreshCw, CheckCircle2, XCircle } from "lucide-react";
+import { Trophy, ShieldAlert, Award, Clock, Users, ArrowUpRight, Flame, RefreshCw, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 
 export default function PublicLeaderboardView() {
   const [leaderboard, setLeaderboard] = useState(null);
