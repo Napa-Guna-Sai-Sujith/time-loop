@@ -721,6 +721,311 @@ QUESTIONS_BANK = [
         "options": ["O(1)", "O(α(N)) where α is inverse Ackermann", "O(log N)", "O(N)"],
         "correct_answer": "O(α(N)) where α is inverse Ackermann",
         "explanation": "Combining Union by Rank and Path Compression yields O(α(N)) amortized time, practically less than 5 for any physically possible universe value."
+    },
+
+    # ==================== LEVEL 1 (Set 3 Additions) ====================
+    {
+        "custom_id": "MATH-L1-003",
+        "level": 1,
+        "category": "Mathematics",
+        "difficulty": "Intermediate",
+        "type": "mcq",
+        "question_text": "If log_2(x) + log_2(x - 2) = 3, what is the real value of x?",
+        "options": ["4", "-2", "6", "8"],
+        "correct_answer": "4",
+        "explanation": "log_2(x(x-2)) = 3 => x^2 - 2x = 8 => x^2 - 2x - 8 = 0 => (x-4)(x+2)=0. Log requires x > 2, so x = 4."
+    },
+    {
+        "custom_id": "LOGIC-L1-003",
+        "level": 1,
+        "category": "Logical Reasoning",
+        "difficulty": "Intermediate",
+        "type": "mcq",
+        "question_text": "Point A is 10m North of Point B. Point C is 10m East of Point B. What is the shortest distance and direction from C to A?",
+        "options": ["10√2 m North-West", "10√2 m North-East", "20 m North-West", "10 m South-West"],
+        "correct_answer": "10√2 m North-West",
+        "explanation": "Shortest distance = √(10^2 + 10^2) = 10√2 m. Moving from C to A is North and West."
+    },
+    {
+        "custom_id": "APT-L1-003",
+        "level": 1,
+        "category": "Aptitude",
+        "difficulty": "Intermediate",
+        "type": "mcq",
+        "question_text": "A sum of money doubles itself in 5 years at simple interest. In how many years will it become four times itself at the same rate?",
+        "options": ["15 years", "10 years", "20 years", "12 years"],
+        "correct_answer": "15 years",
+        "explanation": "Doubling means SI = P in 5 yrs. To become 4 times itself, SI = 3P. Time required = 3 * 5 = 15 years."
+    },
+    {
+        "custom_id": "PY-L1-003",
+        "level": 1,
+        "category": "Python Coding",
+        "difficulty": "Intermediate",
+        "type": "code_output",
+        "question_text": "What is the output of the following Python expression?",
+        "code_snippet": "print(list(filter(lambda x: x % 2 == 0, range(1, 8))))",
+        "options": ["[2, 4, 6]", "[1, 3, 5, 7]", "[0, 2, 4, 6]", "[2, 4, 6, 8]"],
+        "correct_answer": "[2, 4, 6]",
+        "explanation": "range(1, 8) evaluates numbers 1 through 7. The even elements satisfying x % 2 == 0 are [2, 4, 6]."
+    },
+    {
+        "custom_id": "DBG-L1-003",
+        "level": 1,
+        "category": "Debugging",
+        "difficulty": "Intermediate",
+        "type": "debugging",
+        "question_text": "Identify the bug in this function intended to find the maximum element in a list:",
+        "code_snippet": "def get_max(nums):\n    max_val = 0\n    for n in nums:\n        if n > max_val:\n            max_val = n\n    return max_val",
+        "options": [
+            "Fails for lists containing only negative numbers",
+            "Syntax error on line 4",
+            "IndexError when nums is empty",
+            "max_val must be initialized to 1"
+        ],
+        "correct_answer": "Fails for lists containing only negative numbers",
+        "explanation": "Initializing max_val to 0 causes get_max([-5, -2, -10]) to incorrectly return 0. Should initialize to float('-inf') or nums[0]."
+    },
+    {
+        "custom_id": "DSA-L1-003",
+        "level": 1,
+        "category": "DSA Concept MCQs",
+        "difficulty": "Intermediate",
+        "type": "mcq",
+        "question_text": "Which of the following sorting algorithms is NOT stable in its standard textbook implementation?",
+        "options": ["Quick Sort", "Merge Sort", "Insertion Sort", "Bubble Sort"],
+        "correct_answer": "Quick Sort",
+        "explanation": "Standard Quick Sort can swap equal elements across the partition pivot, failing to preserve original order."
+    },
+
+    # ==================== LEVEL 2 (Set 3 Additions) ====================
+    {
+        "custom_id": "MATH-L2-003",
+        "level": 2,
+        "category": "Mathematics",
+        "difficulty": "Intermediate",
+        "type": "mcq",
+        "question_text": "Find the sum of the infinite geometric series: 12 + 4 + 4/3 + 4/9 + ...",
+        "options": ["18", "16", "24", "15"],
+        "correct_answer": "18",
+        "explanation": "First term a = 12, common ratio r = 1/3. Sum = a / (1 - r) = 12 / (2/3) = 18."
+    },
+    {
+        "custom_id": "LOGIC-L2-003",
+        "level": 2,
+        "category": "Logical Reasoning",
+        "difficulty": "Intermediate",
+        "type": "mcq",
+        "question_text": "In a row of 40 students, Priya is 15th from the left and Amit is 18th from the right. How many students are seated between Priya and Amit?",
+        "options": ["7", "8", "9", "6"],
+        "correct_answer": "7",
+        "explanation": "Between = Total - (Left + Right) = 40 - (15 + 18) = 40 - 33 = 7."
+    },
+    {
+        "custom_id": "APT-L2-003",
+        "level": 2,
+        "category": "Aptitude",
+        "difficulty": "Intermediate",
+        "type": "mcq",
+        "question_text": "A merchant marks an item 40% above cost price and allows a discount of 25%. What is his overall profit percentage?",
+        "options": ["5%", "10%", "15%", "8%"],
+        "correct_answer": "5%",
+        "explanation": "Let CP = 100 => Marked Price = 140. Selling Price = 140 * 0.75 = 105. Profit = 5%."
+    },
+    {
+        "custom_id": "PY-L2-003",
+        "level": 2,
+        "category": "Python Coding",
+        "difficulty": "Intermediate",
+        "type": "code_output",
+        "question_text": "What is the output of the following dictionary comprehension?",
+        "code_snippet": "keys = ['a', 'b', 'c']\nvals = [1, 2, 3]\nd = {k: v*2 for k, v in zip(keys, vals) if v > 1}\nprint(d)",
+        "options": ["{'b': 4, 'c': 6}", "{'a': 2, 'b': 4, 'c': 6}", "{'b': 2, 'c': 3}", "{'c': 6}"],
+        "correct_answer": "{'b': 4, 'c': 6}",
+        "explanation": "zip pairs: ('a', 1), ('b', 2), ('c', 3). The condition v > 1 filters for 'b' and 'c'. Multiplying by 2 yields {'b': 4, 'c': 6}."
+    },
+    {
+        "custom_id": "DBG-L2-003",
+        "level": 2,
+        "category": "Debugging",
+        "difficulty": "Intermediate",
+        "type": "debugging",
+        "question_text": "Why does this binary search implementation produce an infinite loop when target is greater than mid?",
+        "code_snippet": "def bsearch(arr, target):\n    low, high = 0, len(arr) - 1\n    while low < high:\n        mid = (low + high) // 2\n        if arr[mid] < target:\n            low = mid\n        else:\n            high = mid\n    return low",
+        "options": [
+            "low = mid does not advance when low and high differ by 1",
+            "arr is not indexed from zero",
+            "high should start at len(arr)",
+            "Division by zero occurs"
+        ],
+        "correct_answer": "low = mid does not advance when low and high differ by 1",
+        "explanation": "When high = low + 1, mid = (low + low + 1) // 2 = low. Setting low = mid keeps low identical, freezing the loop. It must be low = mid + 1."
+    },
+    {
+        "custom_id": "DSA-L2-003",
+        "level": 2,
+        "category": "DSA Concept MCQs",
+        "difficulty": "Intermediate",
+        "type": "mcq",
+        "question_text": "What is the minimum number of standard FIFO queues required to implement a LIFO Stack?",
+        "options": ["2", "1", "3", "4"],
+        "correct_answer": "2",
+        "explanation": "Two FIFO queues are needed in classic data structures to achieve LIFO push and pop semantics."
+    },
+
+    # ==================== LEVEL 3 (Set 3 Additions) ====================
+    {
+        "custom_id": "MATH-L3-003",
+        "level": 3,
+        "category": "Mathematics",
+        "difficulty": "Intermediate",
+        "type": "mcq",
+        "question_text": "What is the derivative of f(x) = x * ln(x) with respect to x evaluated at x = e?",
+        "options": ["2", "1", "e", "0"],
+        "correct_answer": "2",
+        "explanation": "By product rule: f'(x) = 1*ln(x) + x*(1/x) = ln(x) + 1. At x = e: ln(e) + 1 = 1 + 1 = 2."
+    },
+    {
+        "custom_id": "LOGIC-L3-003",
+        "level": 3,
+        "category": "Logical Reasoning",
+        "difficulty": "Intermediate",
+        "type": "mcq",
+        "question_text": "Statements: Some servers are routers. All routers are gateways. Which conclusion definitely follows?",
+        "options": [
+            "Some servers are gateways",
+            "All gateways are servers",
+            "No gateway is a router",
+            "All servers are gateways"
+        ],
+        "correct_answer": "Some servers are gateways",
+        "explanation": "The subset of servers that are routers must belong to the gateways set since all routers are gateways."
+    },
+    {
+        "custom_id": "APT-L3-003",
+        "level": 3,
+        "category": "Aptitude",
+        "difficulty": "Intermediate",
+        "type": "mcq",
+        "question_text": "Three partners A, B, and C invest capital in the ratio 3:4:5 for durations in the ratio 2:3:1. What is their profit sharing ratio?",
+        "options": ["6:12:5", "3:6:5", "1:2:1", "6:7:5"],
+        "correct_answer": "6:12:5",
+        "explanation": "Profit = Capital * Time => (3*2) : (4*3) : (5*1) = 6 : 12 : 5."
+    },
+    {
+        "custom_id": "PY-L3-003",
+        "level": 3,
+        "category": "Python Coding",
+        "difficulty": "Intermediate",
+        "type": "code_output",
+        "question_text": "What is the output of the following Python generator code?",
+        "code_snippet": "gen = (x**2 for x in range(3))\nprint(list(gen))\nprint(list(gen))",
+        "options": ["[0, 1, 4] then []", "[0, 1, 4] then [0, 1, 4]", "TypeError", "AttributeError"],
+        "correct_answer": "[0, 1, 4] then []",
+        "explanation": "Generators can only be iterated over once. After list(gen) consumes all items, the second call yields empty list []."
+    },
+    {
+        "custom_id": "DBG-L3-003",
+        "level": 3,
+        "category": "Debugging",
+        "difficulty": "Intermediate",
+        "type": "debugging",
+        "question_text": "What error will be triggered when calling this function on any n > 0?",
+        "code_snippet": "def fib(n, memo={}):\n    if n in memo: return memo[n]\n    memo[n] = fib(n - 1) + fib(n - 2)\n    return memo[n]",
+        "options": [
+            "RecursionError: maximum recursion depth exceeded",
+            "Returns 0 incorrectly",
+            "TypeError: unhashable type",
+            "MemoryError"
+        ],
+        "correct_answer": "RecursionError: maximum recursion depth exceeded",
+        "explanation": "Without a base case (e.g. if n <= 1: return n), fib decrements indefinitely into negative values."
+    },
+    {
+        "custom_id": "DSA-L3-003",
+        "level": 3,
+        "category": "DSA Concept MCQs",
+        "difficulty": "Intermediate",
+        "type": "mcq",
+        "question_text": "In Dijkstra's algorithm implemented with a Min-Heap, what is the time complexity for a graph with V vertices and E edges?",
+        "options": ["O((V + E) log V)", "O(V^2)", "O(E + V log V)", "O(V * E)"],
+        "correct_answer": "O((V + E) log V)",
+        "explanation": "V extract-min operations take O(V log V) and at most E decrease-key operations take O(E log V)."
+    },
+
+    # ==================== LEVEL 4 (Set 3 Additions) ====================
+    {
+        "custom_id": "MATH-L4-003",
+        "level": 4,
+        "category": "Mathematics",
+        "difficulty": "Intermediate",
+        "type": "mcq",
+        "question_text": "If a 2x2 matrix has eigenvalues λ1 = 3 and λ2 = 5, what is its determinant?",
+        "options": ["15", "8", "2", "25"],
+        "correct_answer": "15",
+        "explanation": "The determinant of a matrix equals the product of its eigenvalues: 3 * 5 = 15."
+    },
+    {
+        "custom_id": "LOGIC-L4-003",
+        "level": 4,
+        "category": "Logical Reasoning",
+        "difficulty": "Intermediate",
+        "type": "mcq",
+        "question_text": "Six nodes P, Q, R, S, T, U form a directed acyclic pipeline where P->Q, Q->R, P->S, S->T, and both R and T lead to U. How many distinct paths exist from P to U?",
+        "options": ["2", "3", "4", "1"],
+        "correct_answer": "2",
+        "explanation": "The paths are: P -> Q -> R -> U, and P -> S -> T -> U. Total 2 distinct paths."
+    },
+    {
+        "custom_id": "APT-L4-003",
+        "level": 4,
+        "category": "Aptitude",
+        "difficulty": "Intermediate",
+        "type": "mcq",
+        "question_text": "25 workers complete 1/3 of a project in 24 days. How many total additional workers must be recruited to finish the remaining 2/3 work in 16 days?",
+        "options": ["50", "25", "75", "30"],
+        "correct_answer": "50",
+        "explanation": "Total work = 25*24*3 = 1800 man-days. Remaining work = 1200 man-days. Workers needed = 1200 / 16 = 75 workers. Additional workers = 75 - 25 = 50."
+    },
+    {
+        "custom_id": "PY-L4-003",
+        "level": 4,
+        "category": "Python Coding",
+        "difficulty": "Intermediate",
+        "type": "code_output",
+        "question_text": "What does the following decorator pattern print?",
+        "code_snippet": "def deco(f):\n    def wrap(*a):\n        return f(*a).upper() + '!'\n    return wrap\n\n@deco\ndef greet(name):\n    return f'hello {name}'\n\nprint(greet('loop'))",
+        "options": ["HELLO LOOP!", "hello loop!", "TypeError", "None"],
+        "correct_answer": "HELLO LOOP!",
+        "explanation": "wrap calls greet('loop') -> 'hello loop', converts to uppercase -> 'HELLO LOOP', and appends '!' -> 'HELLO LOOP!'."
+    },
+    {
+        "custom_id": "DBG-L4-003",
+        "level": 4,
+        "category": "Debugging",
+        "difficulty": "Intermediate",
+        "type": "debugging",
+        "question_text": "Identify the concurrency flaw in this multithreaded counter without synchronization:",
+        "code_snippet": "import threading\ncounter = 0\ndef inc():\n    global counter\n    for _ in range(100000):\n        counter += 1",
+        "options": [
+            "Race condition leads to lost updates due to non-atomic read-modify-write",
+            "Deadlock occurs immediately",
+            "GIL guarantees counter will always be exactly correct",
+            "SyntaxError in global declaration"
+        ],
+        "correct_answer": "Race condition leads to lost updates due to non-atomic read-modify-write",
+        "explanation": "The bytecode for counter += 1 involves load, add, and store. Thread preemption between these steps causes missed increments."
+    },
+    {
+        "custom_id": "DSA-L4-003",
+        "level": 4,
+        "category": "DSA Concept MCQs",
+        "difficulty": "Intermediate",
+        "type": "mcq",
+        "question_text": "What is the amortized cost per append operation for N insertions into a dynamically resizing array with doubling capacity?",
+        "options": ["O(1)", "O(log N)", "O(N)", "O(N^2)"],
+        "correct_answer": "O(1)",
+        "explanation": "Sum of all reallocation copy costs across N insertions is bounded by 2N, giving an amortized constant O(1) time per append."
     }
 ]
 
@@ -771,10 +1076,11 @@ def seed_database():
             db.commit()
             print("[OK] Default EventSettings initialized in DB.")
 
-        # 3. Seed Questions
-        existing_count = db.query(Question).count()
-        if existing_count == 0:
-            for q_data in QUESTIONS_BANK:
+        # 3. Seed Questions (Inserts missing questions idempotently)
+        added_count = 0
+        for q_data in QUESTIONS_BANK:
+            exists = db.query(Question).filter(Question.custom_id == q_data["custom_id"]).first()
+            if not exists:
                 q = Question(
                     custom_id=q_data["custom_id"],
                     level=q_data["level"],
@@ -789,10 +1095,10 @@ def seed_database():
                     is_active=True
                 )
                 db.add(q)
-            db.commit()
-            print(f"[OK] Seeded {len(QUESTIONS_BANK)} curated questions across 6 categories!")
-        else:
-            print(f"[INFO] Existing Question Bank verified ({existing_count} questions in DB).")
+                added_count += 1
+        db.commit()
+        total_q = db.query(Question).count()
+        print(f"[OK] Question Bank updated: added {added_count} new questions (Total in DB: {total_q}).")
     except Exception as e:
         print(f"[ERROR] Error during seed: {e}")
         db.rollback()

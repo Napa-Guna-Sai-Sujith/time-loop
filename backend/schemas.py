@@ -121,6 +121,8 @@ class QuestionPlayerView(BaseModel):
     remaining_seconds: int
     question_results: Optional[List[str]] = None
     attempt_number: int = 1
+    level_solved_count: int = 0
+    level_target: int = 6
 
 # --- Gameplay Schemas ---
 class AnswerSubmitRequest(BaseModel):
@@ -141,6 +143,8 @@ class AnswerSubmitResponse(BaseModel):
     total_questions: Optional[int] = None
     question_results: Optional[List[str]] = None
     attempt_number: Optional[int] = None
+    level_solved_count: Optional[int] = None
+    level_target: Optional[int] = None
 
 class TimeoutRequest(BaseModel):
     pass

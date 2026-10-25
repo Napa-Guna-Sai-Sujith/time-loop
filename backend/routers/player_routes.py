@@ -69,7 +69,9 @@ def get_player_state(
         "question_number": active_question.question_number if active_question else 1,
         "total_questions": active_question.total_questions if active_question else (settings.questions_per_attempt if settings else 6),
         "question_results": active_question.question_results if active_question else None,
-        "attempt_number": active_question.attempt_number if active_question else 1
+        "attempt_number": active_question.attempt_number if active_question else 1,
+        "level_solved_count": active_question.level_solved_count if active_question else 0,
+        "level_target": active_question.level_target if active_question else 6
     }
 
 @router.post("/submit-answer", response_model=AnswerSubmitResponse)
@@ -128,7 +130,9 @@ async def submit_answer(
         question_number=next_q.question_number if next_q else None,
         total_questions=next_q.total_questions if next_q else None,
         question_results=next_q.question_results if next_q else None,
-        attempt_number=next_q.attempt_number if next_q else None
+        attempt_number=next_q.attempt_number if next_q else None,
+        level_solved_count=result.get("level_solved_count", next_q.level_solved_count if next_q else 0),
+        level_target=result.get("level_target", next_q.level_target if next_q else 6)
     )
 
 @router.post("/timeout")

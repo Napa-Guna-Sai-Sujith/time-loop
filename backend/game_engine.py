@@ -184,6 +184,7 @@ def get_current_question_view(db: Session, team: Team, settings: EventSettings) 
     except Exception:
         options = []
 
+    level_solved = get_team_level_solved_count(db, team.id, team.current_level)
     return QuestionPlayerView(
         id=q.id,
         custom_id=q.custom_id,
@@ -198,14 +199,50 @@ def get_current_question_view(db: Session, team: Team, settings: EventSettings) 
         total_questions=len(q_ids),
         remaining_seconds=remaining,
         question_results=question_results,
-        attempt_number=state.attempt_number
+        attempt_number=state.attempt_number,
+        level_solved_count=level_solved,
+        level_target=6
     )
+
+def get_team_level_solved_count(db: Session, team_id: int, level: int) -> int:
+    """Calculates how many unique questions this team has solved in this level across all sets/attempts."""
+    states = (
+        db.query(TeamLevelState)
+        .filter(TeamLevelState.team_id == team_id, TeamLevelState.level == level)
+        .all()
+    )
+    solved = set()
+    for s in states:
+        try:
+            ids = json.loads(s.solved_question_ids or "[]")
+            for qid in ids:
+                solved.add(qid)
+        except Exception:
+            pass
+    return len(solved)
+
+def get_used_question_ids_in_level(db: Session, team_id: int, level: int) -> List[int]:
+    """Returns all question IDs already assigned to this team in this level across all sets/attempts."""
+    states = (
+        db.query(TeamLevelState)
+        .filter(TeamLevelState.team_id == team_id, TeamLevelState.level == level)
+        .all()
+    )
+    used = []
+    for s in states:
+        try:
+            ids = json.loads(s.active_question_ids or "[]")
+            used.extend(ids)
+        except Exception:
+            pass
+    return used
 
 def submit_team_answer(db: Session, team: Team, answer_text: str, settings: EventSettings) -> Dict[str, Any]:
     """Validates submitted answer. Advances through the 6 questions of the current set.
-    If all 6 questions in the set are solved correctly within 15 mins -> advances to next level.
-    If the 6-question set completes with errors -> deducts 1 token and starts the next set of questions (Set 2 / Set 3).
-    If all tokens are lost -> team is eliminated."""
+    Goal: Team must solve 6 questions overall across the 3 sets (18 questions total) in this level to pass to the next level.
+    If 6 questions overall are solved -> advances to next level and resets 3 tokens!
+    If a 6-question set completes with fewer than 6 overall solved -> deducts 1 token and starts the next set of questions (Set 2 / Set 3).
+    If all 3 tokens are lost -> team is eliminated."""
     state = get_or_create_level_state(db, team, settings)
     now = datetime.datetime.utcnow()
 
@@ -234,6 +271,7 @@ def submit_team_answer(db: Session, team: Team, answer_text: str, settings: Even
         if current_qid not in solved_ids:
             solved_ids.append(current_qid)
         state.solved_question_ids = json.dumps(solved_ids)
+        db.commit()
     else:
         # INCORRECT: Deduct 2 minutes 30 seconds (150 seconds) penalty from continuous countdown
         if state.expires_at:
@@ -246,6 +284,58 @@ def submit_team_answer(db: Session, team: Team, answer_text: str, settings: Even
     if remaining <= 0:
         return handle_timeout(db, team, settings, return_dict=True)
 
+    # Check overall solved questions for this level across all sets (out of 18 questions)
+    total_level_solved = get_team_level_solved_count(db, team.id, team.current_level)
+
+    # TARGET ACHIEVED: Team has solved 6 questions overall in this level!
+    if total_level_solved >= 6:
+        state.is_completed = True
+        time_spent = (now - state.started_at).total_seconds()
+        state.time_spent_seconds = time_spent
+        team.total_time_seconds += time_spent
+        team.tokens_remaining = settings.starting_tokens # Reset 3 tokens for the next level
+
+        if team.current_level >= 4:
+            # Conquered regular levels!
+            team.status = "ESCAPED"
+            team.total_score = calculate_team_score(team, settings)
+            db.commit()
+            return {
+                "correct": is_correct,
+                "message": "TIMELINE SECURED! You solved 6 questions overall and conquered the TIME LOOP!",
+                "status": "ESCAPED",
+                "explanation": explanation,
+                "next_question": None,
+                "tokens_remaining": team.tokens_remaining,
+                "current_level": team.current_level,
+                "total_score": team.total_score,
+                "time_penalty_applied": 0 if is_correct else 150,
+                "level_solved_count": 6,
+                "level_target": 6
+            }
+        else:
+            old_level = team.current_level
+            team.current_level += 1
+            team.total_score = calculate_team_score(team, settings)
+            db.commit()
+
+            # Start fresh level attempt (Level team.current_level, Set 1)
+            next_q = get_current_question_view(db, team, settings)
+            return {
+                "correct": is_correct,
+                "message": f"LEVEL {old_level} CLEARED! You solved 6 questions overall! Warping to Level {team.current_level}...",
+                "status": "LEVEL_CLEARED",
+                "explanation": explanation,
+                "next_question": next_q,
+                "tokens_remaining": team.tokens_remaining,
+                "current_level": team.current_level,
+                "total_score": team.total_score,
+                "time_penalty_applied": 0 if is_correct else 150,
+                "level_solved_count": 0,
+                "level_target": 6
+            }
+
+    # TARGET NOT YET REACHED (total_level_solved < 6)
     is_last_question = (idx + 1 >= len(q_ids))
 
     if not is_last_question:
@@ -257,126 +347,87 @@ def submit_team_answer(db: Session, team: Team, answer_text: str, settings: Even
         next_q = get_current_question_view(db, team, settings)
         return {
             "correct": is_correct,
-            "message": "You saved the timeline by solving this question!" if is_correct else "Incorrect answer: -2 min 30 sec penalty deducted. Advancing to next question...",
+            "message": f"Correct! Level {team.current_level}: {total_level_solved}/6 solved overall." if is_correct else "Incorrect answer: -2 min 30 sec penalty deducted. Advancing to next question...",
             "status": "NEXT_QUESTION",
             "explanation": explanation,
             "next_question": next_q,
             "tokens_remaining": team.tokens_remaining,
             "current_level": team.current_level,
             "total_score": team.total_score,
-            "time_penalty_applied": 0 if is_correct else 150
+            "time_penalty_applied": 0 if is_correct else 150,
+            "level_solved_count": total_level_solved,
+            "level_target": 6
         }
 
-    # THIS WAS THE 6th (LAST) QUESTION OF THE CURRENT SET!
-    solved_ids = json.loads(state.solved_question_ids or "[]")
-    all_solved = (len(solved_ids) == len(q_ids))
-
+    # THIS WAS THE 6th (LAST) QUESTION OF THE CURRENT SET, AND OVERALL SOLVED < 6
+    state.is_failed = True
     time_spent = (now - state.started_at).total_seconds()
     state.time_spent_seconds = time_spent
     team.total_time_seconds += time_spent
 
-    if all_solved:
-        # PASSED LEVEL! All 6 questions solved correctly!
-        state.is_completed = True
-        team.tokens_remaining = settings.starting_tokens # Reset 3 tokens for next level
+    team.tokens_remaining -= 1
+    team.total_tokens_used += 1
 
-        if team.current_level >= 4:
-            # Conquered regular levels!
-            team.status = "ESCAPED"
-            team.total_score = calculate_team_score(team, settings)
-            db.commit()
-            return {
-                "correct": is_correct,
-                "message": "TIMELINE SECURED! You solved all questions and conquered the TIME LOOP!",
-                "status": "ESCAPED",
-                "explanation": explanation,
-                "next_question": None,
-                "tokens_remaining": team.tokens_remaining,
-                "current_level": team.current_level,
-                "total_score": team.total_score,
-                "time_penalty_applied": 0 if is_correct else 150
-            }
-        else:
-            # Advance to next level!
-            team.current_level += 1
-            team.total_score = calculate_team_score(team, settings)
-            db.commit()
-
-            # Start fresh level attempt (Level team.current_level, Set 1)
-            next_q = get_current_question_view(db, team, settings)
-            return {
-                "correct": is_correct,
-                "message": f"LEVEL {team.current_level - 1} CLEARED! All 6 questions solved! Warping to Level {team.current_level}...",
-                "status": "LEVEL_CLEARED",
-                "explanation": explanation,
-                "next_question": next_q,
-                "tokens_remaining": team.tokens_remaining,
-                "current_level": team.current_level,
-                "total_score": team.total_score,
-                "time_penalty_applied": 0 if is_correct else 150
-            }
+    if team.tokens_remaining <= 0:
+        # ALL TOKENS EXHAUSTED -> OUT OF THE RACE (ELIMINATED)
+        team.status = "ELIMINATED"
+        team.tokens_remaining = 0
+        team.total_score = calculate_team_score(team, settings)
+        db.commit()
+        return {
+            "correct": is_correct,
+            "message": f"Set {state.attempt_number} completed with {total_level_solved}/6 solved overall. All tokens lost! Your team is out of the race.",
+            "status": "ELIMINATED",
+            "explanation": explanation,
+            "next_question": None,
+            "tokens_remaining": 0,
+            "current_level": team.current_level,
+            "total_score": team.total_score,
+            "time_penalty_applied": 0 if is_correct else 150,
+            "level_solved_count": total_level_solved,
+            "level_target": 6
+        }
     else:
-        # FAILED SET! Completed all 6 questions, but not all were solved correctly
-        state.is_failed = True
-        team.tokens_remaining -= 1
-        team.total_tokens_used += 1
+        # TOKENS REMAIN: Generate next set of questions for this level (Set 2 / Set 3)
+        next_attempt_num = state.attempt_number + 1
+        duration = settings.timer_duration_seconds or 900
+        new_expires_at = now + datetime.timedelta(seconds=duration)
 
-        if team.tokens_remaining <= 0:
-            # ALL TOKENS EXHAUSTED -> OUT OF THE RACE (ELIMINATED)
-            team.status = "ELIMINATED"
-            team.tokens_remaining = 0
-            team.total_score = calculate_team_score(team, settings)
-            db.commit()
-            return {
-                "correct": is_correct,
-                "message": f"Set {state.attempt_number} completed with {len(solved_ids)}/6 correct. All 3 tokens lost! Your team is out of the race.",
-                "status": "ELIMINATED",
-                "explanation": explanation,
-                "next_question": None,
-                "tokens_remaining": 0,
-                "current_level": team.current_level,
-                "total_score": team.total_score,
-                "time_penalty_applied": 0 if is_correct else 150
-            }
-        else:
-            # TOKENS REMAIN: Generate next set of questions for this level (Set 2 / Set 3)
-            next_attempt_num = state.attempt_number + 1
-            duration = settings.timer_duration_seconds or 900
-            new_expires_at = now + datetime.timedelta(seconds=duration)
+        used_ids = get_used_question_ids_in_level(db, team.id, team.current_level)
+        fresh_qids = select_questions_for_attempt(db, team.current_level, settings, exclude_ids=used_ids)
 
-            prev_ids = json.loads(state.active_question_ids or "[]")
-            fresh_qids = select_questions_for_attempt(db, team.current_level, settings, exclude_ids=prev_ids)
+        new_state = TeamLevelState(
+            team_id=team.id,
+            level=team.current_level,
+            attempt_number=next_attempt_num,
+            tokens_remaining=team.tokens_remaining,
+            started_at=now,
+            expires_at=new_expires_at,
+            active_question_ids=json.dumps(fresh_qids),
+            current_question_index=0,
+            solved_question_ids=json.dumps([]),
+            time_spent_seconds=0.0,
+            is_completed=False,
+            is_failed=False
+        )
+        db.add(new_state)
+        team.total_score = calculate_team_score(team, settings)
+        db.commit()
 
-            new_state = TeamLevelState(
-                team_id=team.id,
-                level=team.current_level,
-                attempt_number=next_attempt_num,
-                tokens_remaining=team.tokens_remaining,
-                started_at=now,
-                expires_at=new_expires_at,
-                active_question_ids=json.dumps(fresh_qids),
-                current_question_index=0,
-                solved_question_ids=json.dumps([]),
-                time_spent_seconds=0.0,
-                is_completed=False,
-                is_failed=False
-            )
-            db.add(new_state)
-            team.total_score = calculate_team_score(team, settings)
-            db.commit()
-
-            next_q = get_current_question_view(db, team, settings)
-            return {
-                "correct": is_correct,
-                "message": f"Set {state.attempt_number} finished with {len(solved_ids)}/6 solved. 1 token lost ({team.tokens_remaining} tokens left). Starting Set {next_attempt_num}...",
-                "status": "SET_FAILED",
-                "explanation": explanation,
-                "next_question": next_q,
-                "tokens_remaining": team.tokens_remaining,
-                "current_level": team.current_level,
-                "total_score": team.total_score,
-                "time_penalty_applied": 0 if is_correct else 150
-            }
+        next_q = get_current_question_view(db, team, settings)
+        return {
+            "correct": is_correct,
+            "message": f"Set {state.attempt_number} finished ({total_level_solved}/6 solved overall). 1 token lost ({team.tokens_remaining} tokens left). Starting Set {next_attempt_num}...",
+            "status": "SET_FAILED",
+            "explanation": explanation,
+            "next_question": next_q,
+            "tokens_remaining": team.tokens_remaining,
+            "current_level": team.current_level,
+            "total_score": team.total_score,
+            "time_penalty_applied": 0 if is_correct else 150,
+            "level_solved_count": total_level_solved,
+            "level_target": 6
+        }
 
 def find_replacement_question(db: Session, original_q: Question, exclude_ids: List[int]) -> Optional[Question]:
     """Finds a replacement question testing the same category and similar difficulty."""
@@ -443,6 +494,8 @@ def handle_timeout(db: Session, team: Team, settings: EventSettings, return_dict
         state.time_spent_seconds = time_spent
         team.total_time_seconds += time_spent
 
+    total_level_solved = get_team_level_solved_count(db, team.id, team.current_level)
+
     # Deduct 1 token
     team.tokens_remaining -= 1
     team.total_tokens_used += 1
@@ -456,12 +509,14 @@ def handle_timeout(db: Session, team: Team, settings: EventSettings, return_dict
 
         res_data = {
             "correct": False,
-            "message": "All tokens lost. Your team has vanished from the timeline.",
+            "message": f"Time expired! Solved {total_level_solved}/6 overall. All tokens lost! Your team is out of the race.",
             "status": "ELIMINATED",
             "next_question": None,
             "tokens_remaining": 0,
             "current_level": team.current_level,
-            "total_score": team.total_score
+            "total_score": team.total_score,
+            "level_solved_count": total_level_solved,
+            "level_target": 6
         }
         return res_data if return_dict else None
     else:
@@ -471,7 +526,8 @@ def handle_timeout(db: Session, team: Team, settings: EventSettings, return_dict
         expires_at = now + datetime.timedelta(seconds=duration)
         attempt_num = (state.attempt_number + 1) if state else 2
 
-        fresh_qids = select_questions_for_attempt(db, team.current_level, settings)
+        used_ids = get_used_question_ids_in_level(db, team.id, team.current_level)
+        fresh_qids = select_questions_for_attempt(db, team.current_level, settings, exclude_ids=used_ids)
 
         new_state = TeamLevelState(
             team_id=team.id,
@@ -494,12 +550,14 @@ def handle_timeout(db: Session, team: Team, settings: EventSettings, return_dict
         next_q = get_current_question_view(db, team, settings)
         res_data = {
             "correct": False,
-            "message": f"Time expired! 1 token deducted. Fresh attempt started ({team.tokens_remaining} tokens remain).",
+            "message": f"Time expired on Set {state.attempt_number if state else 1}! Solved {total_level_solved}/6 overall. 1 token lost ({team.tokens_remaining} remaining). Starting Set {attempt_num}...",
             "status": "TIMEOUT",
             "next_question": next_q,
             "tokens_remaining": team.tokens_remaining,
             "current_level": team.current_level,
-            "total_score": team.total_score
+            "total_score": team.total_score,
+            "level_solved_count": total_level_solved,
+            "level_target": 6
         }
         return res_data if return_dict else next_q
 

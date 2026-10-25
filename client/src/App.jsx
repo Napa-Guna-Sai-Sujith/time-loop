@@ -120,7 +120,9 @@ export default function App() {
           question_number: q.question_number !== undefined ? q.question_number : state.question_number,
           total_questions: q.total_questions !== undefined ? q.total_questions : state.total_questions,
           question_results: q.question_results !== undefined ? q.question_results : state.question_results,
-          attempt_number: q.attempt_number !== undefined ? q.attempt_number : (state.attempt_number || 1)
+          attempt_number: q.attempt_number !== undefined ? q.attempt_number : (state.attempt_number || 1),
+          level_solved_count: q.level_solved_count !== undefined ? q.level_solved_count : (state.level_solved_count || 0),
+          level_target: q.level_target !== undefined ? q.level_target : (state.level_target || 6)
         });
       }
     } catch {
@@ -236,7 +238,9 @@ export default function App() {
           ...res.next_question,
           tokens: res.tokens_remaining ?? res.team?.tokens_remaining ?? res.next_question.tokens,
           question_results: res.next_question.question_results ?? res.question_results,
-          attempt_number: res.next_question.attempt_number ?? res.attempt_number ?? 1
+          attempt_number: res.next_question.attempt_number ?? res.attempt_number ?? 1,
+          level_solved_count: res.next_question.level_solved_count ?? res.level_solved_count ?? 0,
+          level_target: res.next_question.level_target ?? res.level_target ?? 6
         });
       } else if (res.status === "ESCAPED" || res.status === "ELIMINATED") {
         setCurrentQuestion(null);
@@ -269,7 +273,9 @@ export default function App() {
           ...res.next_question,
           tokens: res.tokens_remaining ?? res.team?.tokens_remaining ?? res.next_question.tokens,
           question_results: res.next_question.question_results ?? [],
-          attempt_number: res.next_question.attempt_number ?? 1
+          attempt_number: res.next_question.attempt_number ?? 1,
+          level_solved_count: res.next_question.level_solved_count ?? res.level_solved_count ?? 0,
+          level_target: res.next_question.level_target ?? res.level_target ?? 6
         });
       } else if (res.status === "ELIMINATED") {
         setCurrentQuestion(null);

@@ -171,6 +171,9 @@ export default function GamePlayView({
               <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-700">
                 SET {currentQuestion?.attempt_number || 1} OF 3
               </span>
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 border border-green-300 dark:border-green-700">
+                SOLVED: {currentQuestion?.level_solved_count ?? 0}/6
+              </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-gray-400 font-mono mt-0.5">
               Question {currentQuestion?.question_number || 1} of 6 • Team: <strong className="text-cyan-400">{team?.team_name}</strong>
@@ -221,6 +224,8 @@ export default function GamePlayView({
               hasPenalty={penaltyNotice}
               questionResults={mergedQuestionResults}
               setNumber={currentQuestion?.attempt_number || 1}
+              levelSolvedCount={currentQuestion?.level_solved_count ?? 0}
+              levelTarget={currentQuestion?.level_target ?? 6}
             />
           </div>
 

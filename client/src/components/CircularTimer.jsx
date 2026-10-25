@@ -8,7 +8,9 @@ export default function CircularTimer({
   level = 1,
   hasPenalty = false,
   questionResults = [],
-  setNumber = 1
+  setNumber = 1,
+  levelSolvedCount = 0,
+  levelTarget = 6
 }) {
   const percentage = Math.max(0, Math.min(100, (secondsRemaining / maxSeconds) * 100));
   const radius = 64;
@@ -106,10 +108,24 @@ export default function CircularTimer({
       </div>
 
       {/* 6 Questions Progression Indicator for Current Level */}
-      <div className="mt-4 flex flex-col items-center gap-1.5 w-full">
-        <div className="text-[10px] font-mono text-slate-500 dark:text-gray-400 uppercase tracking-wider">
-          Level {level} • Set {setNumber} of 3 (6 Questions)
+      <div className="mt-4 flex flex-col items-center gap-2 w-full">
+        <div className="w-full flex items-center justify-between text-[11px] font-mono font-bold">
+          <span className="text-slate-500 dark:text-gray-400 uppercase tracking-wider">
+            Level {level} • Set {setNumber} of 3
+          </span>
+          <span className="text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 border border-cyan-500/30 px-2 py-0.5 rounded-full">
+            Solved: {levelSolvedCount} / {levelTarget}
+          </span>
         </div>
+
+        {/* Level Overall Progress Bar towards 6 Solved */}
+        <div className="w-full bg-slate-200 dark:bg-black/60 rounded-full h-1.5 overflow-hidden border border-slate-300 dark:border-gray-800">
+          <div 
+            className="bg-gradient-to-r from-cyan-500 to-green-500 h-full transition-all duration-500 rounded-full"
+            style={{ width: `${Math.min(100, (levelSolvedCount / levelTarget) * 100)}%` }}
+          />
+        </div>
+
         <div className="flex items-center justify-center gap-1.5 w-full">
           {[1, 2, 3, 4, 5, 6].map((qNum, i) => {
             const resultStatus = (questionResults && questionResults[i]) ? questionResults[i] : null;
